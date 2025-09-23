@@ -16,6 +16,7 @@
     "test": "echo \"No tests yet for lsp-server\""
   },
   "dependencies": {
+    "@yabelfish/medical-terminology": "^0.1.0",
     "js-yaml": "^4.1.0",
     "vscode-languageserver": "^9.0.1",
     "vscode-languageserver-textdocument": "^1.0.11",

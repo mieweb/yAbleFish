@@ -17,6 +17,7 @@
     "test": "echo \"No tests yet for browser-client\""
   },
   "dependencies": {
+    "@yabelfish/medical-terminology": "^0.1.0",
     "monaco-editor": "^0.45.0",
     "monaco-languageclient": "^8.1.1",
     "vscode-languageserver": "^9.0.1",
