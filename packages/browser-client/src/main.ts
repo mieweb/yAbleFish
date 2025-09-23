@@ -576,18 +576,6 @@ Annual physical exam
       }
     });
 
-    // Function to find which section a line belongs to
-    const findSectionForLine = (lineNumber: number) => {
-      let bestHeading = null;
-      for (let i = headings.length - 1; i >= 0; i--) {
-        if (headings[i].line <= lineNumber) {
-          bestHeading = headings[i];
-          break;
-        }
-      }
-      return bestHeading;
-    };
-
     // Build sections with proper code association - only direct children
     headings.forEach(heading => {
       // Find the next heading at the same level or higher (lower level number)
