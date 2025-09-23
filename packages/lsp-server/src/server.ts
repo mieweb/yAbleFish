@@ -11,7 +11,6 @@
 import {
   createConnection,
   TextDocuments,
-  Diagnostic,
   ProposedFeatures,
   InitializeParams,
   DidChangeConfigurationNotification,
@@ -19,7 +18,6 @@ import {
   TextDocumentPositionParams,
   TextDocumentSyncKind,
   InitializeResult,
-  ServerCapabilities,
 } from 'vscode-languageserver/node';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
@@ -43,7 +41,6 @@ const diagnosticsProvider = new DiagnosticsProvider(terminology, parser);
 
 let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
-let hasDiagnosticRelatedInformationCapability = false;
 
 connection.onInitialize((params: InitializeParams) => {
   const capabilities = params.capabilities;
@@ -55,11 +52,6 @@ connection.onInitialize((params: InitializeParams) => {
   );
   hasWorkspaceFolderCapability = !!(
     capabilities.workspace && !!capabilities.workspace.workspaceFolders
-  );
-  hasDiagnosticRelatedInformationCapability = !!(
-    capabilities.textDocument &&
-    capabilities.textDocument.publishDiagnostics &&
-    capabilities.textDocument.publishDiagnostics.relatedInformation
   );
 
   const result: InitializeResult = {
@@ -108,7 +100,7 @@ connection.onInitialized(() => {
 // Cache the settings of all open documents
 const documentSettings: Map<string, any> = new Map();
 
-connection.onDidChangeConfiguration(change => {
+connection.onDidChangeConfiguration(_change => {
   if (hasConfigurationCapability) {
     // Reset all cached document settings
     documentSettings.clear();
@@ -118,7 +110,7 @@ connection.onDidChangeConfiguration(change => {
   documents.all().forEach(validateTextDocument);
 });
 
-function getDocumentSettings(resource: string): Thenable<any> {
+function getDocumentSettings(resource: string): Promise<any> {
   if (!hasConfigurationCapability) {
     return Promise.resolve({
       enableDiagnostics: true,

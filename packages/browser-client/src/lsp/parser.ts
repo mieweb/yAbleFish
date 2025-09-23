@@ -117,7 +117,10 @@ export class YAbelParser {
     };
   }
 
-  private extractMetadata(title: string, content: string): Record<string, any> {
+  private extractMetadata(
+    title: string,
+    _content: string
+  ): Record<string, any> {
     const metadata: Record<string, any> = {};
 
     const titleLower = title.toLowerCase();

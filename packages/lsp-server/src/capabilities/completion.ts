@@ -7,10 +7,7 @@
 import {
   CompletionItem,
   CompletionItemKind,
-  CompletionParams,
   Position,
-  Range,
-  TextDocumentPositionParams,
 } from 'vscode-languageserver';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { MedicalTerminology } from '../medical/terminology';

@@ -187,7 +187,7 @@ export class DiagnosticsProvider {
    */
   private checkUnknownMedicalTerms(
     text: string,
-    document: TextDocument
+    _document: TextDocument
   ): Diagnostic[] {
     const diagnostics: Diagnostic[] = [];
 
