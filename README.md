@@ -33,6 +33,10 @@ There are several standards coming including:
 
 yAbelFish is a web-based editor that leverages the Monaco Editor (the core of VS Code) and runs entirely in the browser using a Web Worker to host the LSP server. This means no backend is required, and all processing happens locally in the user's browser.
 
+## Examples
+
+[EXAMPLE.md](EXAMPLE.md)
+
 
 ## 🚀 Features
 
