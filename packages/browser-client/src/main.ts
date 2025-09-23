@@ -346,12 +346,25 @@ Phone: (555) 123-4567
 ## Chief Complaint
 Follow-up for diabetes management
 
+## HPI
+Patient returns for routine diabetes follow-up. Reports good adherence to medication regimen. Blood sugars have been stable in the 120-140 range. No recent episodes of hypoglycemia.
+
+## Allergies and Intolerances
+- PENICILLINS
+- SULFONAMIDES
+
+## Medications
+- metformin 1000 mg twice daily
+- insulin glargine 20 units at bedtime  
+- lisinopril 5 mg daily
+
 ## Assessment
 - Type 2 diabetes mellitus - well controlled
 - Hypertension - stable on current regimen
 
 ## Plan
 - Continue current diabetes regimen
+- HbA1c in 3 months
 - Follow up in 3 months`
         },
         {

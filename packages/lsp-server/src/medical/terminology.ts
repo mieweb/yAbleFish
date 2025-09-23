@@ -181,6 +181,45 @@ export class MedicalTerminology {
         contextHints: ['medications', 'plan'],
       },
       {
+        term: 'lisinopril 5 mg',
+        codes: [
+          {
+            code: '314077',
+            description: 'lisinopril 5 MG Oral Tablet',
+            type: 'rxnorm',
+            category: 'medication',
+          },
+        ],
+        aliases: ['lisinopril 5mg tablet', 'lisinopril 5 mg daily'],
+        contextHints: ['medications', 'plan'],
+      },
+      {
+        term: 'metformin',
+        codes: [
+          {
+            code: '6809',
+            description: 'Metformin',
+            type: 'rxnorm',
+            category: 'medication',
+          },
+        ],
+        aliases: ['metformin 1000 mg', 'metformin twice daily', 'metformin 1000 mg twice daily'],
+        contextHints: ['medications', 'diabetes'],
+      },
+      {
+        term: 'insulin glargine',
+        codes: [
+          {
+            code: '274783',
+            description: 'insulin glargine',
+            type: 'rxnorm',
+            category: 'medication',
+          },
+        ],
+        aliases: ['insulin glargine 20 units', 'glargine insulin', 'long-acting insulin'],
+        contextHints: ['medications', 'diabetes', 'insulin'],
+      },
+      {
         term: 'warfarin 5 mg',
         codes: [
           {
@@ -284,11 +323,12 @@ export class MedicalTerminology {
     start: number;
     end: number;
   }> {
-    const matches: Array<{
+    const allMatches: Array<{
       term: MedicalTerm;
       match: string;
       start: number;
       end: number;
+      length: number;
     }> = [];
 
     const normalizedText = text.toLowerCase();
@@ -301,11 +341,12 @@ export class MedicalTerminology {
       );
       let match;
       while ((match = regex.exec(normalizedText)) !== null) {
-        matches.push({
+        allMatches.push({
           term,
           match: text.substring(match.index, match.index + match[0].length),
           start: match.index,
           end: match.index + match[0].length,
+          length: match[0].length,
         });
       }
     }
@@ -318,16 +359,75 @@ export class MedicalTerminology {
       );
       let match;
       while ((match = regex.exec(normalizedText)) !== null) {
-        matches.push({
+        allMatches.push({
           term,
           match: text.substring(match.index, match.index + match[0].length),
           start: match.index,
           end: match.index + match[0].length,
+          length: match[0].length,
         });
       }
     }
 
-    return matches.sort((a, b) => a.start - b.start);
+    // Sort by start position, then by length (descending) for greedy matching
+    allMatches.sort((a, b) => {
+      if (a.start !== b.start) return a.start - b.start;
+      return b.length - a.length; // Prefer longer matches
+    });
+
+    // Greedy matching: keep only non-overlapping matches, preferring longer ones
+    const greedyMatches: Array<{
+      term: MedicalTerm;
+      match: string;
+      start: number;
+      end: number;
+    }> = [];
+
+    for (const candidate of allMatches) {
+      // Check if this candidate overlaps with any already selected match
+      // Also check for contextual conflicts (e.g., "CHF - Congestive heart failure")
+      const hasConflict = greedyMatches.some(existing => {
+        // Direct overlap
+        if (candidate.start < existing.end && candidate.end > existing.start) {
+          return true;
+        }
+        
+        // Contextual conflict: check if candidate is an alias of existing term or vice versa
+        // and they're close together (within 10 characters with only punctuation/whitespace)
+        const distance = Math.abs(candidate.start - existing.end);
+        const betweenText = text.substring(
+          Math.min(existing.end, candidate.start),
+          Math.max(existing.end, candidate.start)
+        );
+        const isCloseWithPunctuation = distance <= 10 && /^[\s\-–—,;:.]*$/.test(betweenText);
+        
+        if (isCloseWithPunctuation) {
+          // Check if one is an alias of the other
+          const candidateAliases = candidate.term.aliases || [];
+          const existingAliases = existing.term.aliases || [];
+          
+          // Check if candidate term/aliases match existing term/aliases
+          if (candidateAliases.includes(existing.term.term.toLowerCase()) ||
+              existingAliases.includes(candidate.term.term.toLowerCase()) ||
+              candidate.term.term.toLowerCase() === existing.term.term.toLowerCase()) {
+            return true;
+          }
+        }
+        
+        return false;
+      });
+
+      if (!hasConflict) {
+        greedyMatches.push({
+          term: candidate.term,
+          match: candidate.match,
+          start: candidate.start,
+          end: candidate.end,
+        });
+      }
+    }
+
+    return greedyMatches.sort((a, b) => a.start - b.start);
   }
 
   /**
