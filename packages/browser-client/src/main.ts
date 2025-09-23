@@ -45,8 +45,6 @@ class YAbelFishEditor {
   private editor!: monaco.editor.IStandaloneCodeEditor;
   private model!: monaco.editor.ITextModel;
   private currentSection: Section = 'patient';
-  private worker: Worker | null = null;
-  private port: MessagePort | null = null;
   private sectionRanges = new Map<Section, { start: number; end: number }>();
   private sectionTitles = new Map<Section, string>();
   private availableSections = new Set<Section>();
@@ -91,6 +89,7 @@ Patient returns for routine diabetes follow-up. Reports good adherence to medica
 
   constructor() {
     this.initializeMonaco();
+    this.registerYAbelLanguage();
     this.createModel();
     this.createEditor();
     this.initializeLSP();
@@ -103,30 +102,48 @@ Patient returns for routine diabetes follow-up. Reports good adherence to medica
   }
 
   private initializeMonaco() {
-    // Register yAbel language
-    monaco.languages.register({ id: 'yabel' });
+    // Set Monaco theme
+    monaco.editor.setTheme('vs');
+    
+    // Configure Monaco editor options
+    monaco.editor.EditorOptions.readOnly.defaultValue = false;
+  }
 
-    // Configure Monaco theme (VS Code dark)
-    monaco.editor.defineTheme('yabel-dark', {
-      base: 'vs-dark',
-      inherit: true,
-      rules: [
-        { token: 'keyword', foreground: '569cd6' },
-        { token: 'string', foreground: 'ce9178' },
-        { token: 'number', foreground: 'b5cea8' },
-        { token: 'comment', foreground: '6a9955' },
-      ],
-      colors: {
-        'editor.background': '#1e1e1e',
-        'editor.foreground': '#cccccc',
-        'editor.lineHighlightBackground': '#2d2d30',
-        'editor.selectionBackground': '#264f78',
-        'editorCursor.foreground': '#ffffff',
-        'editor.inactiveSelectionBackground': '#3a3d41',
-      },
+  private registerYAbelLanguage() {
+    // Register yAbel language
+    monaco.languages.register({
+      id: 'yabel',
+      extensions: ['.yabel', '.yaml'],
+      aliases: ['yAbel', 'yabel'],
+      mimetypes: ['text/x-yabel', 'application/x-yabel']
     });
 
-    monaco.editor.setTheme('yabel-dark');
+    // Basic tokenization for medical documents
+    monaco.languages.setMonarchTokensProvider('yabel', {
+      tokenizer: {
+        root: [
+          [/^##\s+.*$/, 'section-header'],
+          [/^[A-Za-z][^:]*:/, 'field-name'],
+          [/\b[A-Z]\d{2}(\.\d+)?\b/, 'icd-code'],
+          [/\b\d{4,}\b/, 'rxnorm-code'],
+          [/#.*$/, 'comment']
+        ]
+      }
+    });
+
+    // Define theme for medical terminology
+    monaco.editor.defineTheme('yabel-theme', {
+      base: 'vs',
+      inherit: true,
+      rules: [
+        { token: 'section-header', foreground: '0066cc', fontStyle: 'bold' },
+        { token: 'field-name', foreground: '008000', fontStyle: 'bold' },
+        { token: 'icd-code', foreground: '800080' },
+        { token: 'rxnorm-code', foreground: 'ff6600' },
+        { token: 'comment', foreground: '808080', fontStyle: 'italic' }
+      ],
+      colors: {}
+    });
   }
 
   private createModel() {
@@ -178,7 +195,7 @@ Patient returns for routine diabetes follow-up. Reports good adherence to medica
 
     // Track document changes for the single model
     this.model.onDidChangeContent(() => {
-      this.sendDocumentChange(this.model.uri.toString(), this.model.getValue());
+      // TODO: Send document changes to real LSP server
       // Recalculate section ranges when content changes
       this.calculateSectionRanges();
     });
@@ -188,59 +205,27 @@ Patient returns for routine diabetes follow-up. Reports good adherence to medica
 
   private async initializeLSP() {
     try {
-      // Create worker
-      this.worker = new Worker(
-        new URL('./worker/lsp-worker.ts', import.meta.url),
-        { type: 'module' }
-      );
+      // Import and start the new LSP client
+      const { YAbelLSPClient } = await import('./lsp/client.js');
+      
+      const lspClient = new YAbelLSPClient();
+      await lspClient.start();
 
-      // Create message channel
-      const channel = new MessageChannel();
-      this.port = channel.port1;
-
-      // Listen for metadata updates from worker
-      this.port.onmessage = event => {
-        this.handleWorkerMessage(event.data);
-      };
-
-      // Send port to worker
-      this.worker.postMessage({ type: 'lsp-init' }, [channel.port2]);
-
-      // Send initial document content
-      this.sendDocumentChange(this.model.uri.toString(), this.model.getValue());
-
-      console.log('LSP worker started successfully');
-    } catch (error) {
-      console.error('Failed to initialize LSP:', error);
-    }
-  }
-
-  private handleWorkerMessage(data: any) {
-    switch (data.type) {
-      case 'metadata-update':
-        this.handleMetadataUpdate(data.data as MetadataUpdate);
-        break;
-      case 'completions':
-        // Handle completions if needed
-        break;
-      case 'hover':
-        // Handle hover if needed
-        break;
-      case 'diagnostics':
-        this.handleDiagnostics(data.data);
-        break;
-    }
-  }
-
-  private sendDocumentChange(uri: string, text: string) {
-    if (this.port) {
-      this.port.postMessage({
-        type: 'document-changed',
-        uri,
-        text,
+      // Initialize LSP session
+      await lspClient.sendRequest('initialize', {
+        processId: null,
+        clientInfo: { name: 'yAbelFish Browser Client', version: '0.1.0' },
+        rootUri: null,
+        capabilities: {}
       });
+
+      console.log('✅ Real LSP client started successfully');
+    } catch (error) {
+      console.error('❌ Failed to initialize LSP:', error);
     }
   }
+
+  // TODO: Replace with real LSP client communication methods
 
   private handleMetadataUpdate(update: MetadataUpdate) {
     // Store the codes, diagnostics, and patient info
@@ -428,11 +413,135 @@ Annual physical exam
     }
   }
 
+  private extractCodesFromContent(content: string): ExtractedCode[] {
+    const codes: ExtractedCode[] = [];
+    const lines = content.split('\n');
+    
+    lines.forEach((line, lineIndex) => {
+      const lineNumber = lineIndex + 1;
+      
+      // Extract medical terms that could be coded
+      // Look for diabetes-related terms
+      const diabetesTerms = [
+        { term: 'Type 2 diabetes mellitus', code: 'E11.9', pattern: /type\s*2\s*diabetes\s*mellitus/i },
+        { term: 'diabetes management', code: 'Z71.3', pattern: /diabetes\s*management/i },
+        { term: 'diabetes', code: 'E11.9', pattern: /\bdiabetes\b/i },
+        { term: 'hypoglycemia', code: 'E16.2', pattern: /hypoglycemia/i },
+        { term: 'HbA1c', code: '83036', pattern: /\bhba1c\b/i }
+      ];
+
+      // Look for hypertension terms
+      const hypertensionTerms = [
+        { term: 'Hypertension', code: 'I10', pattern: /\bhypertension\b/i },
+        { term: 'well controlled hypertension', code: 'I10', pattern: /well\s*controlled.*hypertension/i }
+      ];
+
+      // Look for heart-related terms
+      const heartTerms = [
+        { term: 'CHF', code: 'I50.9', pattern: /\bchf\b/i },
+        { term: 'Congestive heart failure', code: 'I50.9', pattern: /congestive\s*heart\s*failure/i },
+        { term: 'Atrial fibrillation', code: 'I48.91', pattern: /atrial\s*fibrillation/i },
+        { term: 'chest pain', code: 'R06.02', pattern: /chest\s*pain/i },
+        { term: 'shortness of breath', code: 'R06.00', pattern: /shortness\s*of\s*breath/i }
+      ];
+
+      // Look for medication terms (RxNorm codes)
+      const medicationTerms = [
+        { term: 'metformin', code: '6809', pattern: /\bmetformin\b/i },
+        { term: 'insulin glargine', code: '274783', pattern: /insulin\s*glargine/i },
+        { term: 'lisinopril', code: '29046', pattern: /\blisinopril\b/i }
+      ];
+
+      // Look for allergy terms
+      const allergyTerms = [
+        { term: 'PENICILLINS', code: 'N0000007624', pattern: /\bpenicillins?\b/i },
+        { term: 'SULFONAMIDES', code: 'N0000007508', pattern: /\bsulfonamides?\b/i }
+      ];
+
+      const allTerms = [...diabetesTerms, ...hypertensionTerms, ...heartTerms, ...medicationTerms, ...allergyTerms];
+
+      allTerms.forEach(termData => {
+        const match = line.match(termData.pattern);
+        if (match) {
+          const startColumn = match.index! + 1;
+          const endColumn = startColumn + match[0].length;
+          
+          codes.push({
+            term: termData.term,
+            code: termData.code,
+            range: new monaco.Range(lineNumber, startColumn, lineNumber, endColumn)
+          });
+        }
+      });
+    });
+
+    return codes;
+  }
+
+  private extractPatientFromContent(content: string): any {
+    const lines = content.split('\n');
+    const patient: any = {};
+
+    // Extract from visit header - pattern: RE: Johnson, Robert 01-15-1975
+    const firstLine = lines[0];
+    const patientMatch = firstLine.match(/RE:\s*([^,]+),\s*([^\s]+)\s*([\d-]+)/i);
+    if (patientMatch) {
+      patient.surname = patientMatch[1].trim();
+      patient.name = patientMatch[2].trim();
+      patient.dob = patientMatch[3].trim();
+    }
+
+    // Extract from Patient section
+    lines.forEach(line => {
+      const trimmedLine = line.trim();
+      
+      // Extract Name
+      const nameMatch = trimmedLine.match(/^Name:\s*(.+)$/i);
+      if (nameMatch) {
+        const fullName = nameMatch[1].trim();
+        const nameParts = fullName.split(' ');
+        if (nameParts.length >= 2) {
+          patient.name = nameParts[0];
+          patient.surname = nameParts.slice(1).join(' ');
+        } else {
+          patient.name = fullName;
+        }
+      }
+
+      // Extract Sex/Gender
+      const sexMatch = trimmedLine.match(/^Sex:\s*(.+)$/i);
+      if (sexMatch) {
+        patient.gender = sexMatch[1].trim();
+      }
+
+      // Extract DOB
+      const dobMatch = trimmedLine.match(/^DOB:\s*(.+)$/i);
+      if (dobMatch) {
+        patient.dob = dobMatch[1].trim();
+      }
+
+      // Extract Phone
+      const phoneMatch = trimmedLine.match(/^Phone:\s*(.+)$/i);
+      if (phoneMatch) {
+        patient.phone = [{ number: phoneMatch[1].trim() }];
+      }
+    });
+
+    return patient;
+  }
+
   private updateMetadataPanel() {
     const currentUri = this.model.uri.toString();
-    const codes = this.extractedCodes.get(currentUri) || [];
+    const content = this.model.getValue();
+    
+    // Extract codes directly from content until LSP server is connected
+    const codes = this.extractCodesFromContent(content);
     const diagnostics = this.diagnostics.get(currentUri) || [];
-    const patient = this.patientInfo.get(currentUri);
+    const patient = this.extractPatientFromContent(content);
+
+    // Store extracted data temporarily
+    this.extractedCodes.set(currentUri, codes);
+    this.patientInfo.set(currentUri, patient);
 
     // Update header with patient and visit information
     this.updateHeader(patient);
@@ -685,8 +794,8 @@ Annual physical exam
               ${section.codes.map(code => 
                 `<li class="code-item" 
                      data-line="${code.range.startLineNumber}" 
-                     data-column="${((code.range as any).start?.character || 0) + 1}" 
-                     data-end-column="${((code.range as any).end?.character || 0) + 1}">
+                     data-column="${code.range.startColumn}" 
+                     data-end-column="${code.range.endColumn}">
                   <span class="code-term">${code.term}</span>
                   <span class="code-value">${code.code}</span>
                 </li>`
@@ -862,8 +971,6 @@ Annual physical exam
 
   public dispose() {
     this.editor?.dispose();
-    this.worker?.terminate();
-
     this.model?.dispose();
   }
 }
