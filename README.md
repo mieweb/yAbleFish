@@ -8,7 +8,18 @@ DNS: yabelfish.com
 
 # yAbelFish
 
-A Language Server Protocol (LSP) server designed medical documentation for the yAbel Fromat.  yAble is a lightweight, human-readable text format for capturing human-readable semi-structured notes optimized for medical visits.  It is meant to be easy to write and read by clinicians while still being structured enough for software to parse and analyze.
+A Language Server Protocol (LSP) server designed for medical documentation using the yAbel format. yAbel is a lightweight, human-readable text format that combines the best of **Markdown** and **YAML** - but without being strict about either. This flexible approach allows clinicians to write natural, flowing medical notes while still maintaining enough structure for software to parse and analyze.
+
+## 📝 What is yAbel?
+
+yAbel is designed to be:
+- **Markdown-inspired** for natural text flow and readability
+- **YAML-influenced** for structured data when needed  
+- **Forgiving and flexible** - not strict about syntax rules
+- **Clinician-friendly** - prioritizes ease of writing over rigid formatting
+- **Machine-parseable** - structured enough for intelligent software processing
+
+Think of it as "Markdown with hints of YAML" where you can write naturally but add structure when it helps.
 
 See: [yCard](https://github.com/mieweb/yCard) for more details on the yAbel format.
 There are several standards coming including:
