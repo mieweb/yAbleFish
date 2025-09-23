@@ -1,0 +1,33 @@
+{
+  "name": "yabelfish",
+  "version": "0.1.0",
+  "description": "A Language Server Protocol (LSP) server for medical documentation using the yAbel format",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=packages/browser-client",
+    "build": "npm run build --workspaces --if-present",
+    "preview": "npm run preview --workspace=packages/browser-client",
+    "clean": "npm run clean --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2"
+  },
+  "keywords": [
+    "medical",
+    "documentation",
+    "lsp",
+    "yabel",
+    "monaco-editor",
+    "healthcare"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mieweb/yAbleFish.git"
+  },
+  "homepage": "https://yabelfish.com"
+}

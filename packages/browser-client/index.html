@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>yAbelFish - Medical Documentation Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: #1e1e1e;
+            color: #cccccc;
+            overflow: hidden;
+        }
+
+        /* Header Styles */
+        .header {
+            background: #2d2d30;
+            padding: 12px 20px;
+            border-bottom: 1px solid #3e3e42;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .header h1 {
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo {
+            font-size: 24px;
+        }
+
+        /* Navigation Tabs */
+        .tabs {
+            display: flex;
+            gap: 4px;
+        }
+
+        .tab {
+            padding: 8px 16px;
+            background: transparent;
+            border: none;
+            color: #cccccc;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .tab:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+        }
+
+        .tab.active {
+            background: #0078d4;
+            color: #ffffff;
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -13px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 4px solid #0078d4;
+        }
+
+        /* Header Info */
+        .header-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 12px;
+            color: #a0a0a0;
+        }
+
+        .patient-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .visit-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-left: 16px;
+            border-left: 1px solid #3e3e42;
+        }
+
+        /* Main Container */
+        .main-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Editor Area */
+        .editor-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .editor-header {
+            background: #252526;
+            padding: 8px 16px;
+            border-bottom: 1px solid #3e3e42;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .section-summary {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .summary-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+        }
+
+        .summary-label {
+            color: #a0a0a0;
+        }
+
+        .summary-value {
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        .summary-value.warning {
+            color: #ff8c00;
+        }
+
+        .summary-value.error {
+            color: #f14c4c;
+        }
+
+        #editor {
+            flex: 1;
+            border: none;
+            outline: none;
+        }
+
+        /* Metadata Panel */
+        .metadata-panel {
+            width: 350px;
+            background: #252526;
+            border-left: 1px solid #3e3e42;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .metadata-panel.collapsed {
+            width: 40px;
+        }
+
+        .metadata-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid #3e3e42;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #2d2d30;
+        }
+
+        .metadata-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .metadata-toggle {
+            background: none;
+            border: none;
+            color: #cccccc;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px;
+            border-radius: 2px;
+            transition: background 0.2s;
+        }
+
+        .metadata-toggle:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .metadata-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .metadata-panel.collapsed .metadata-content {
+            display: none;
+        }
+
+        .metadata-panel.collapsed .metadata-title {
+            display: none;
+        }
+
+        /* Metadata Sections */
+        .metadata-section {
+            margin-bottom: 24px;
+        }
+
+        .metadata-section h3 {
+            font-size: 13px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-icon {
+            font-size: 16px;
+        }
+
+        /* Code Items */
+        .code-item {
+            background: #2d2d30;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 8px;
+            transition: border-color 0.2s;
+        }
+
+        .code-item:hover {
+            border-color: #0078d4;
+        }
+
+        .code-term {
+            font-size: 13px;
+            font-weight: 500;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+
+        .code-id {
+            font-size: 11px;
+            color: #569cd6;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        }
+
+        /* Diagnostic Items */
+        .diagnostic-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            background: #2d2d30;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+
+        .diagnostic-item.warning {
+            border-left: 4px solid #ff8c00;
+        }
+
+        .diagnostic-item.error {
+            border-left: 4px solid #f14c4c;
+        }
+
+        .diagnostic-icon {
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .diagnostic-content {
+            flex: 1;
+        }
+
+        .diagnostic-message {
+            font-size: 13px;
+            color: #ffffff;
+            margin-bottom: 4px;
+            line-height: 1.4;
+        }
+
+        .diagnostic-code {
+            font-size: 11px;
+            color: #a0a0a0;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        }
+
+        /* Empty States */
+        .empty-state {
+            text-align: center;
+            color: #6a6a6a;
+            font-size: 12px;
+            padding: 20px;
+            font-style: italic;
+        }
+
+        /* Error Container */
+        .error-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            background: #1e1e1e;
+        }
+
+        .error-content {
+            text-align: center;
+            max-width: 400px;
+            padding: 40px;
+        }
+
+        .error-content h3 {
+            color: #f14c4c;
+            margin-bottom: 16px;
+            font-size: 18px;
+        }
+
+        .error-content p {
+            color: #cccccc;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        /* Scrollbar Styles */
+        .metadata-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .metadata-content::-webkit-scrollbar-track {
+            background: #1e1e1e;
+        }
+
+        .metadata-content::-webkit-scrollbar-thumb {
+            background: #3e3e42;
+            border-radius: 4px;
+        }
+
+        .metadata-content::-webkit-scrollbar-thumb:hover {
+            background: #484848;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .metadata-panel {
+                width: 300px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 8px 12px;
+            }
+            
+            .header h1 {
+                font-size: 16px;
+            }
+            
+            .tabs {
+                flex-wrap: wrap;
+            }
+            
+            .tab {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+            
+            .metadata-panel {
+                width: 280px;
+            }
+            
+            .header-info {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <h1>
+                <span class="logo">🐠</span>
+                yAbelFish
+            </h1>
+            <div class="tabs">
+                <button class="tab active" data-section="patient">Patient</button>
+                <button class="tab" data-section="chief">Chief Complaint</button>
+                <button class="tab" data-section="hpi">HPI</button>
+                <button class="tab" data-section="allergies">Allergies</button>
+                <button class="tab" data-section="meds">Medications</button>
+                <button class="tab" data-section="assessment">Assessment</button>
+                <button class="tab" data-section="plan">Plan</button>
+            </div>
+        </div>
+        <div class="header-info">
+            <div class="patient-info">
+                <span>👤 William Heart</span>
+                <span>🎂 02-14-1964</span>
+            </div>
+            <div class="visit-info">
+                <span>📋 Enc #139</span>
+                <span>📅 09-22-2025</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="editor-area">
+            <div class="editor-header">
+                <div class="section-title">Medical Documentation - Full Visit</div>
+                <div id="section-summary" class="section-summary">
+                    <!-- Dynamic content -->
+                </div>
+            </div>
+            <div id="editor"></div>
+        </div>
+
+        <div id="metadata-panel" class="metadata-panel">
+            <div class="metadata-header">
+                <div class="metadata-title">Medical Intelligence</div>
+                <button id="metadata-toggle" class="metadata-toggle">▶</button>
+            </div>
+            <div class="metadata-content">
+                <div class="metadata-section">
+                    <h3>
+                        <span class="section-icon">🏷️</span>
+                        Extracted Codes
+                    </h3>
+                    <div id="codes-list">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+
+                <div class="metadata-section">
+                    <h3>
+                        <span class="section-icon">⚠️</span>
+                        Diagnostics
+                    </h3>
+                    <div id="diagnostics-list">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
