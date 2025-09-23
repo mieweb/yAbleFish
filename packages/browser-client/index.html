@@ -51,47 +51,7 @@
             font-size: 24px;
         }
 
-        /* Navigation Tabs */
-        .tabs {
-            display: flex;
-            gap: 4px;
-        }
 
-        .tab {
-            padding: 8px 16px;
-            background: transparent;
-            border: none;
-            color: #cccccc;
-            cursor: pointer;
-            border-radius: 4px;
-            font-size: 13px;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            position: relative;
-        }
-
-        .tab:hover {
-            background: rgba(255, 255, 255, 0.05);
-            color: #ffffff;
-        }
-
-        .tab.active {
-            background: #0078d4;
-            color: #ffffff;
-        }
-
-        .tab.active::after {
-            content: '';
-            position: absolute;
-            bottom: -13px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 4px solid transparent;
-            border-right: 4px solid transparent;
-            border-top: 4px solid #0078d4;
-        }
 
         /* Header Info */
         .header-info {
@@ -261,14 +221,53 @@
             font-size: 16px;
         }
 
-        /* Code Items */
-        .code-item {
+        /* Heading Items */
+        .heading-item {
             background: #2d2d30;
             border: 1px solid #3e3e42;
             border-radius: 4px;
-            padding: 12px;
-            margin-bottom: 8px;
+            padding: 8px 12px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .heading-item:hover {
+            border-color: #0078d4;
+            background: #37373d;
+        }
+
+        .heading-level {
+            font-size: 10px;
+            color: #9cdcfe;
+            font-weight: 600;
+            background: #1e1e1e;
+            padding: 2px 6px;
+            border-radius: 2px;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .heading-text {
+            font-size: 12px;
+            font-weight: 500;
+            color: #ffffff;
+            flex: 1;
+        }
+
+        /* Code Items - now inline */
+        .code-item {
+            display: inline-block;
+            background: #2d2d30;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            padding: 6px 10px;
+            margin: 2px 4px 2px 0;
             transition: border-color 0.2s;
+            cursor: default;
         }
 
         .code-item:hover {
@@ -276,14 +275,14 @@
         }
 
         .code-term {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 500;
             color: #ffffff;
-            margin-bottom: 4px;
+            margin-right: 6px;
         }
 
         .code-id {
-            font-size: 11px;
+            font-size: 10px;
             color: #569cd6;
             font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
         }
@@ -400,14 +399,7 @@
                 font-size: 16px;
             }
             
-            .tabs {
-                flex-wrap: wrap;
-            }
-            
-            .tab {
-                padding: 6px 12px;
-                font-size: 12px;
-            }
+
             
             .metadata-panel {
                 width: 280px;
@@ -426,15 +418,6 @@
                 <span class="logo">🐠</span>
                 yAbelFish
             </h1>
-            <div class="tabs">
-                <button class="tab active" data-section="patient">Patient</button>
-                <button class="tab" data-section="chief">Chief Complaint</button>
-                <button class="tab" data-section="hpi">HPI</button>
-                <button class="tab" data-section="allergies">Allergies</button>
-                <button class="tab" data-section="meds">Medications</button>
-                <button class="tab" data-section="assessment">Assessment</button>
-                <button class="tab" data-section="plan">Plan</button>
-            </div>
         </div>
         <div class="header-info">
             <div class="patient-info">
@@ -465,6 +448,16 @@
                 <button id="metadata-toggle" class="metadata-toggle">▶</button>
             </div>
             <div class="metadata-content">
+                <div class="metadata-section">
+                    <h3>
+                        <span class="section-icon">📑</span>
+                        Document Structure
+                    </h3>
+                    <div id="headings-list">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+
                 <div class="metadata-section">
                     <h3>
                         <span class="section-icon">🏷️</span>

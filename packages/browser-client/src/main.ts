@@ -36,6 +36,8 @@ class YAbelFishEditor {
   private worker: Worker | null = null;
   private port: MessagePort | null = null;
   private sectionRanges = new Map<Section, { start: number; end: number }>();
+  private sectionTitles = new Map<Section, string>();
+  private availableSections = new Set<Section>();
 
   // Single document content with all sections
   private documentContent = `# Visit Enc #: 139 Date: 09-22-2025 RE: Heart, William 02-14-1964
@@ -79,9 +81,12 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
     this.initializeMonaco();
     this.createModel();
     this.createEditor();
-    this.setupTabs();
     this.initializeLSP();
     this.setupMetadataPanel();
+    
+    // Initial section calculation
+    this.calculateSectionRanges();
+    this.updateSectionTitle(this.currentSection);
   }
 
   private initializeMonaco() {
@@ -166,43 +171,7 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
     });
   }
 
-  private setupTabs() {
-    const tabs = document.querySelectorAll('.tab');
 
-    tabs.forEach(tab => {
-      tab.addEventListener('click', e => {
-        const target = e.target as HTMLElement;
-        const section = target.dataset.section as Section;
-
-        if (section) {
-          this.switchToSection(section);
-        }
-      });
-    });
-
-    // Initial section title update
-    this.updateSectionTitle(this.currentSection);
-  }
-
-  private switchToSection(section: Section) {
-    // Update tab appearance
-    document.querySelectorAll('.tab').forEach(tab => {
-      tab.classList.remove('active');
-    });
-
-    document
-      .querySelector(`[data-section="${section}"]`)
-      ?.classList.add('active');
-
-    // Update current section and scroll to it
-    this.currentSection = section;
-    this.scrollToSection(section);
-    this.editor.focus();
-
-    // Update metadata panel and section title
-    this.updateMetadataPanel();
-    this.updateSectionTitle(section);
-  }
 
   private async initializeLSP() {
     try {
@@ -287,7 +256,7 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
     const codes = this.extractedCodes.get(currentUri) || [];
     const diagnostics = this.diagnostics.get(currentUri) || [];
 
-    // Update codes list
+    // Update codes list - now inline
     const codesList = document.getElementById('codes-list');
     if (codesList) {
       if (codes.length === 0) {
@@ -297,10 +266,10 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
         codesList.innerHTML = codes
           .map(
             code => `
-          <div class="code-item">
-            <div class="code-term">${code.term}</div>
-            <div class="code-id">${code.code}</div>
-          </div>
+          <span class="code-item">
+            <span class="code-term">${code.term}</span>
+            <span class="code-id">${code.code}</span>
+          </span>
         `
           )
           .join('');
@@ -396,12 +365,15 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
       allergies: 'allergies',
       'allergies and intolerances': 'allergies',
       medications: 'meds',
+      meds: 'meds',
       assessment: 'assessment',
       plan: 'plan',
     };
 
-    // Reset ranges
+    // Reset all tracking data
     this.sectionRanges.clear();
+    this.sectionTitles.clear();
+    this.availableSections.clear();
 
     let currentSection: Section | null = null;
     let sectionStart = 0;
@@ -419,12 +391,19 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
           });
         }
 
-        // Find matching section
+        // Extract the actual heading text (preserve original case)
+        const originalHeading = line.trim().replace(/^#+\s*/, '');
         const headingText = trimmed.replace(/^#+\s*/, '');
+        
+        // Find matching section
+        currentSection = null;
         for (const [key, section] of Object.entries(sectionMappings)) {
           if (headingText.includes(key)) {
             currentSection = section;
             sectionStart = index;
+            // Store the actual title from the document
+            this.sectionTitles.set(section, originalHeading);
+            this.availableSections.add(section);
             break;
           }
         }
@@ -438,7 +417,62 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
         end: lines.length - 1,
       });
     }
+
+    // Update headings list when sections change
+    this.updateHeadingsList();
   }
+
+  /**
+   * Update the headings list in the metadata panel
+   */
+  private updateHeadingsList() {
+    const content = this.model.getValue();
+    const lines = content.split('\n');
+    const headings: { level: number; text: string; line: number }[] = [];
+
+    lines.forEach((line, index) => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('#')) {
+        const match = trimmed.match(/^(#+)\s*(.+)/);
+        if (match) {
+          const level = match[1].length;
+          const text = match[2].trim();
+          headings.push({ level, text, line: index + 1 });
+        }
+      }
+    });
+
+    const headingsList = document.getElementById('headings-list');
+    if (headingsList) {
+      if (headings.length === 0) {
+        headingsList.innerHTML =
+          '<div class="empty-state">No headings detected</div>';
+      } else {
+        headingsList.innerHTML = headings
+          .map(
+            heading => `
+          <div class="heading-item" data-line="${heading.line}">
+            <span class="heading-level">H${heading.level}</span>
+            <span class="heading-text">${heading.text}</span>
+          </div>
+        `
+          )
+          .join('');
+
+        // Add click handlers for heading navigation
+        headingsList.querySelectorAll('.heading-item').forEach(item => {
+          item.addEventListener('click', () => {
+            const line = parseInt(item.getAttribute('data-line') || '1');
+            this.editor.revealLineInCenter(line);
+            this.editor.setPosition({ lineNumber: line, column: 1 });
+            this.editor.focus();
+          });
+        });
+      }
+    }
+  }
+
+
 
   /**
    * Scroll editor to the specified section
