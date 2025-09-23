@@ -254,35 +254,40 @@ connection.onCodeAction(async params => {
 });
 
 // Handle document symbol requests - provide document structure
-connection.onDocumentSymbol(async (params: DocumentSymbolParams): Promise<DocumentSymbol[]> => {
-  const document = documents.get(params.textDocument.uri);
-  if (!document) {
-    return [];
-  }
-
-  try {
-    // Parse the document to get its structure
-    const parsed = parser.parse(document.getText());
-    const symbols: DocumentSymbol[] = [];
-
-    // Convert hierarchical sections to DocumentSymbol format
-    for (const section of parsed.structure.hierarchical) {
-      const symbol = convertSectionToSymbol(section, document);
-      symbols.push(symbol);
+connection.onDocumentSymbol(
+  async (params: DocumentSymbolParams): Promise<DocumentSymbol[]> => {
+    const document = documents.get(params.textDocument.uri);
+    if (!document) {
+      return [];
     }
 
-    return symbols;
-  } catch (error) {
-    connection.console.error(`Error parsing document symbols: ${error}`);
-    return [];
+    try {
+      // Parse the document to get its structure
+      const parsed = parser.parse(document.getText());
+      const symbols: DocumentSymbol[] = [];
+
+      // Convert hierarchical sections to DocumentSymbol format
+      for (const section of parsed.structure.hierarchical) {
+        const symbol = convertSectionToSymbol(section, document);
+        symbols.push(symbol);
+      }
+
+      return symbols;
+    } catch (error) {
+      connection.console.error(`Error parsing document symbols: ${error}`);
+      return [];
+    }
   }
-});
+);
 
 // Helper function to convert ParsedSection to DocumentSymbol
-function convertSectionToSymbol(section: any, document: TextDocument): DocumentSymbol {
+function convertSectionToSymbol(
+  section: any,
+  document: TextDocument
+): DocumentSymbol {
   // Determine symbol kind based on section type
   let kind: SymbolKind = SymbolKind.String; // Default
-  
+
   switch (section.type?.toLowerCase()) {
     case 'patient':
     case 'demographics':
@@ -327,11 +332,17 @@ function convertSectionToSymbol(section: any, document: TextDocument): DocumentS
 
   // Calculate ranges
   const startPos = document.positionAt(section.startOffset || 0);
-  const endPos = document.positionAt(section.endOffset || document.getText().length);
-  
+  const endPos = document.positionAt(
+    section.endOffset || document.getText().length
+  );
+
   // For selection range, use just the header/title
-  const headerEndOffset = section.startOffset + (section.header?.length || section.title?.length || 10);
-  const selectionEndPos = document.positionAt(Math.min(headerEndOffset, section.endOffset || document.getText().length));
+  const headerEndOffset =
+    section.startOffset +
+    (section.header?.length || section.title?.length || 10);
+  const selectionEndPos = document.positionAt(
+    Math.min(headerEndOffset, section.endOffset || document.getText().length)
+  );
 
   const symbol: DocumentSymbol = {
     name: section.title || section.header || section.type || 'Unknown Section',
@@ -345,7 +356,11 @@ function convertSectionToSymbol(section: any, document: TextDocument): DocumentS
       start: startPos,
       end: selectionEndPos,
     },
-    children: section.children ? section.children.map((child: any) => convertSectionToSymbol(child, document)) : [],
+    children: section.children
+      ? section.children.map((child: any) =>
+          convertSectionToSymbol(child, document)
+        )
+      : [],
   };
 
   return symbol;
