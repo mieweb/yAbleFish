@@ -53,37 +53,36 @@ class YAbelFishEditor {
   private patientInfo = new Map<string, any>();
 
   // Single document content with all sections
-  private documentContent = `# Visit Enc #: 139 Date: 09-22-2025 RE: Heart, William 02-14-1964
+  private documentContent = `# Visit Enc #: 142 Date: 09-23-2025 RE: Johnson, Robert 01-15-1975
 
 ## Patient
-Name: William Heart
+Name: Robert Johnson
 Sex: Male
-DOB: 02-14-1964
+DOB: 01-15-1975
+Phone: (555) 123-4567
 
 ## Chief Complaint
-Chest pain and shortness of breath
+Follow-up for diabetes management
 
 ## HPI
-Patient presents with complaints of chest pain and shortness of breath. Symptoms began 2 days ago and have been progressively worsening. Patient reports a history of similar episodes but denies any recent trauma or injury.
+Patient returns for routine diabetes follow-up. Reports good adherence to medication regimen. Blood sugars have been stable in the 120-140 range. No recent episodes of hypoglycemia.
 
 ## Allergies and Intolerances
 - PENICILLINS
 - SULFONAMIDES
 
 ## Medications
-- aspirin 81 mg tablet, delayed release
-- lisinopril 10 mg tablet  
-- Coumadin 5 mg tablet
-- Lasix: 20 mg tablet
+- metformin 1000 mg twice daily
+- insulin glargine 20 units at bedtime  
+- lisinopril 5 mg daily
 
 ## Assessment
-- Hypertension - well controlled on current regimen
-- CHF - Congestive heart failure
-- Atrial fibrillation
+- Type 2 diabetes mellitus - well controlled
+- Hypertension - stable on current regimen
 
 ## Plan
-- Continue lisinopril 10 mg daily
-- Increase monitoring of blood pressure at home
+- Continue current diabetes regimen
+- HbA1c in 3 months
 - Follow up in 3 months`;
 
   // Metadata storage
@@ -96,6 +95,7 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
     this.createEditor();
     this.initializeLSP();
     this.setupMetadataPanel();
+    this.setupDocumentSwitcher();
     
     // Initial section calculation
     this.calculateSectionRanges();
@@ -267,11 +267,162 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
     }
   }
 
+  private updateHeader(patient?: any) {
+    // Extract visit information from document content
+    const content = this.model.getValue();
+    const visitInfo = this.extractVisitInfo(content);
+    
+    // Update patient info in header
+    const patientInfoEl = document.querySelector('.patient-info');
+    if (patientInfoEl && patient) {
+      const patientName = patient.name && patient.surname 
+        ? `${patient.name} ${patient.surname}` 
+        : patient.name || 'Unknown Patient';
+      const patientDob = patient.dob || 'Unknown DOB';
+      
+      patientInfoEl.innerHTML = `
+        <span>👤 ${patientName}</span>
+        <span>🎂 ${patientDob}</span>
+      `;
+    }
+    
+    // Update visit info in header
+    const visitInfoEl = document.querySelector('.visit-info');
+    if (visitInfoEl && visitInfo) {
+      visitInfoEl.innerHTML = `
+        <span>📋 ${visitInfo.encounter || 'No Enc'}</span>
+        <span>📅 ${visitInfo.date || 'No Date'}</span>
+      `;
+    }
+    
+    // Update section title with patient and visit info
+    const sectionTitleEl = document.querySelector('.section-title');
+    if (sectionTitleEl && patient && visitInfo) {
+      const patientName = patient.name && patient.surname 
+        ? `${patient.name} ${patient.surname}` 
+        : patient.name || 'Unknown Patient';
+      sectionTitleEl.textContent = `Medical Documentation - ${patientName} (${visitInfo.encounter || 'Visit'})`;
+    }
+  }
+
+  private extractVisitInfo(content: string) {
+    // Extract visit information from the main heading
+    const lines = content.split('\n');
+    const firstLine = lines[0];
+    
+    // Look for visit header pattern: # Visit Enc #: 139 Date: 09-22-2025 RE: Heart, William 02-14-1964
+    const visitMatch = firstLine.match(/^#\s*Visit\s+Enc\s*#?:\s*(\w+).*Date:\s*([\d-]+)/i);
+    if (visitMatch) {
+      return {
+        encounter: `Enc #${visitMatch[1]}`,
+        date: visitMatch[2]
+      };
+    }
+    
+    // Fallback: try to extract any encounter and date info
+    const encMatch = firstLine.match(/Enc\s*#?:\s*(\w+)/i);
+    const dateMatch = firstLine.match(/Date:\s*([\d-]+)/i) || firstLine.match(/([\d]{2}-[\d]{2}-[\d]{4})/);
+    
+    return {
+      encounter: encMatch ? `Enc #${encMatch[1]}` : null,
+      date: dateMatch ? dateMatch[1] : null
+    };
+  }
+
+  private setupDocumentSwitcher() {
+    const switchButton = document.getElementById('switch-document');
+    if (switchButton) {
+      const documents = [
+        {
+          name: "Robert Johnson",
+          content: `# Visit Enc #: 142 Date: 09-23-2025 RE: Johnson, Robert 01-15-1975
+
+## Patient
+Name: Robert Johnson
+Sex: Male
+DOB: 01-15-1975
+Phone: (555) 123-4567
+
+## Chief Complaint
+Follow-up for diabetes management
+
+## Assessment
+- Type 2 diabetes mellitus - well controlled
+- Hypertension - stable on current regimen
+
+## Plan
+- Continue current diabetes regimen
+- Follow up in 3 months`
+        },
+        {
+          name: "William Heart",
+          content: `# Visit Enc #: 139 Date: 09-22-2025 RE: Heart, William 02-14-1964
+
+## Patient
+Name: William Heart
+Sex: Male
+DOB: 02-14-1964
+
+## Chief Complaint
+Chest pain and shortness of breath
+
+## Assessment
+- Hypertension - well controlled on current regimen
+- CHF - Congestive heart failure
+- Atrial fibrillation
+
+## Plan
+- Continue lisinopril 10 mg daily
+- Follow up in 3 months`
+        },
+        {
+          name: "Jane Doe",
+          content: `# Visit Enc #: 98 Date: 09-20-2025 RE: Doe, Jane 03-10-1985
+
+## Patient
+Name: Jane Doe
+Sex: Female
+DOB: 03-10-1985
+
+## Chief Complaint
+Annual physical exam
+
+## Assessment
+- Healthy adult female
+- Routine screening up to date
+
+## Plan
+- Continue routine care
+- Next annual exam in 12 months`
+        }
+      ];
+
+      let currentDocIndex = 0;
+
+      switchButton.addEventListener('click', () => {
+        currentDocIndex = (currentDocIndex + 1) % documents.length;
+        const newDoc = documents[currentDocIndex];
+        
+        // Update the model content
+        this.model.setValue(newDoc.content);
+        
+        // Update button text to show current patient
+        switchButton.textContent = `📄 Current: ${newDoc.name}`;
+      });
+
+      // Set initial button text
+      switchButton.textContent = `📄 Current: ${documents[0].name}`;
+    }
+  }
+
   private updateMetadataPanel() {
     const currentUri = this.model.uri.toString();
     const codes = this.extractedCodes.get(currentUri) || [];
     const diagnostics = this.diagnostics.get(currentUri) || [];
     const patient = this.patientInfo.get(currentUri);
+
+    // Update header with patient and visit information
+    this.updateHeader(patient);
 
     // Build hierarchical document structure
     const documentStructure = document.getElementById('document-structure');
