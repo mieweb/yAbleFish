@@ -41,10 +41,14 @@ yAbelFish is a web-based editor that leverages the Monaco Editor (the core of VS
 ## 🚀 Features
 
 ### Core Architecture
-- **Monaco Editor** (VS Code editor core) for rich text editing
-- **LSP Server in Web Worker** - no backend required, everything runs in the browser
-- **Notebook-like UI** where each visit section = a cell (Chief Complaint, HPI, Allergies, Medications, Assessment, Plan)
+- **Universal LSP Server** - Core medical intelligence that can run anywhere
+- **Multiple Deployment Options**:
+  - **Browser (Offline)** - Monaco Editor + Web Worker LSP (no backend needed)
+  - **VS Code Extension** - Native VS Code integration with LSP client
+  - **Hosted Web Service** - Centralized LSP server for remote access
+- **Medical Documentation UI** - Notebook-like interface where each visit section = a cell
 - **Real-time Language Intelligence** with completions, hover info, diagnostics, and code actions
+- **Kerberon Integration** - Testing framework for LSP validation and medical accuracy
 
 ### Medical Intelligence
 - **Smart Completions** - Context-aware suggestions for medical terms based on current section
@@ -54,7 +58,6 @@ yAbelFish is a web-based editor that leverages the Monaco Editor (the core of VS
 - **Terminology Integration** - Built-in medical terminology with RxNorm and SNOMED-CT codes
 
 ### User Experience
-- **Tabbed Interface** - Switch between different sections of the medical encounter
 - **Live Metadata Panel** - Shows extracted codes and diagnostics in real-time
 - **VS Code-like Theme** - Familiar dark theme optimized for medical documentation
 - **Instant Feedback** - No page reloads, all processing happens in real-time
@@ -128,11 +131,34 @@ graph TB
 
 ## 📦 Technology Stack
 
+### Core LSP Server
+- **Language**: TypeScript
+- **LSP Framework**: vscode-languageserver (universal)
+- **Medical Data**: RxNorm, SNOMED-CT, ICD-10 terminology
+- **Parser**: Custom yAbel format parser
+
+### Browser Client
 - **Frontend**: TypeScript + Vite
 - **Editor**: Monaco Editor (VS Code core)
-- **LSP**: monaco-languageclient + vscode-languageserver/browser
-- **Communication**: MessagePort/MessageChannel for worker communication
+- **LSP Client**: monaco-languageclient
+- **Worker Communication**: MessagePort/MessageChannel
 - **Styling**: CSS (VS Code-inspired dark theme)
+
+### VS Code Extension
+- **Extension API**: VS Code Extension API
+- **LSP Client**: vscode-languageclient
+- **Language Support**: Custom yAbel language definition
+
+### Web Server
+- **Runtime**: Node.js
+- **Framework**: Express.js (lightweight API)
+- **Communication**: WebSocket for LSP protocol
+- **Deployment**: Docker containerized
+
+### Testing & Integration
+- **Testing Framework**: Kerberon for medical document validation
+- **Unit Tests**: Jest/Vitest
+- **E2E Tests**: Playwright for browser scenarios
 
 ## 🚀 Quick Start
 
@@ -153,16 +179,68 @@ graph TB
 ## 🔧 Project Structure
 
 ```
-babelEditor/
-├── src/
-│   ├── main.ts           # Main application entry point
-│   ├── lsp.worker.ts     # LSP server running in Web Worker
-│   └── types.ts          # TypeScript type definitions (future)
-├── index.html            # Main HTML page with UI
-├── package.json          # Dependencies and scripts
-├── tsconfig.json         # TypeScript configuration
-├── vite.config.ts        # Vite build configuration
-└── README.md            # This file
+yAbleFish/
+├── 📦 packages/
+│   ├── lsp-server/               # Core LSP server (universal)
+│   │   ├── src/
+│   │   │   ├── server.ts         # Main LSP server implementation
+│   │   │   ├── medical/          # Medical terminology & validation
+│   │   │   ├── parser/           # yAbel format parser
+│   │   │   └── capabilities/     # LSP feature implementations
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   │
+│   ├── browser-client/           # Browser-based Monaco editor
+│   │   ├── src/
+│   │   │   ├── main.ts           # Monaco + LSP client setup
+│   │   │   ├── worker/           # Web Worker LSP host
+│   │   │   ├── ui/               # Medical documentation UI
+│   │   │   └── themes/           # VS Code-inspired styling
+│   │   ├── index.html            # Standalone web app
+│   │   ├── package.json
+│   │   └── vite.config.ts
+│   │
+│   ├── vscode-extension/         # VS Code extension
+│   │   ├── src/
+│   │   │   ├── extension.ts      # Extension entry point
+│   │   │   ├── client.ts         # LSP client for VS Code
+│   │   │   └── commands/         # VS Code-specific commands
+│   │   ├── package.json          # Extension manifest
+│   │   └── README.md
+│   │
+│   └── web-server/               # Hosted LSP server
+│       ├── src/
+│       │   ├── server.ts         # HTTP/WebSocket LSP server
+│       │   ├── routes/           # API endpoints
+│       │   └── middleware/       # CORS, auth, etc.
+│       ├── package.json
+│       └── Dockerfile
+│
+├── 🧪 test-environments/
+│   ├── kerberon-integration/     # Kerberon testing setup
+│   │   ├── samples/              # Sample yAbel documents
+│   │   ├── test-cases/           # Kerberon test scenarios
+│   │   ├── kerberon.config.json  # Kerberon configuration
+│   │   └── README.md             # Testing instructions
+│   │
+│   ├── medical-samples/          # Real-world medical examples
+│   └── performance/              # LSP performance benchmarks
+│
+├── 📚 docs/
+│   ├── architecture.md           # System architecture
+│   ├── yabel-format.md           # yAbel format specification
+│   ├── deployment.md             # Deployment guides
+│   └── api/                      # API documentation
+│
+├── 🔧 tools/
+│   ├── build/                    # Build scripts and configs
+│   ├── dev/                      # Development utilities
+│   └── ci/                       # CI/CD configurations
+│
+├── package.json                  # Workspace root
+├── tsconfig.json                 # Root TypeScript config
+├── .github/                      # GitHub Actions workflows
+└── README.md                     # This file
 ```
 
 ## 🎯 Usage Examples
@@ -218,24 +296,48 @@ Modify styles in `index.html` or add new sections by updating the tab structure 
 
 ## 🚧 Roadmap
 
-### Near Term
-- [ ] Tree-sitter WASM for robust parsing
-- [ ] LocalStorage persistence for extracted codes
-- [ ] Export to standard medical formats (HL7 FHIR)
-- [ ] More comprehensive medical terminology
+### Phase 1: Core LSP Foundation 🏗️
+- [ ] **Tree-sitter WASM Parser** - Robust parsing of yAbel format with major headings from examples
+- [ ] **ICD-10 Focus** - Comprehensive ICD-10 condition codes integration
+  - [ ] Code normalization for known conditions
+  - [ ] Warnings for unknown/invalid condition codes
+  - [ ] Diagnostic validation and suggestions
+- [ ] **IntelliSense/Auto-complete** - Smart completions for medical terms
+  - [ ] Context-aware ICD-10 suggestions
+  - [ ] Snippet completions for common medical patterns
+  - [ ] Real-time validation feedback
 
-### Future Enhancements
-- [ ] Voice-to-text integration
-- [ ] Template-based documentation
-- [ ] Integration with external medical APIs
-- [ ] Multi-provider encounter support
-- [ ] PDF/print formatting
+### Phase 2: Monaco Editor Integration 🖥️
+- [ ] **Browser Client Package** - Standalone Monaco editor with embedded LSP
+- [ ] **Web Worker Implementation** - LSP server running in browser worker
+- [ ] **Medical UI Components** - Tabbed interface for visit sections
+- [ ] **Offline Capability** - Full functionality without backend
 
-## 🐛 Known Issues
+### Phase 3: VS Code Extension & Server 🔌
+- [ ] **Web Server LSP** - Hosted LSP service with WebSocket communication
+- [ ] **VS Code Extension** - Native extension with LSP client integration
+- [ ] **Multi-client Support** - Server handles multiple concurrent connections
+- [ ] **Configuration Management** - User preferences and settings sync
 
-- TypeScript compilation warnings (non-blocking)
-- Limited medical terminology (proof-of-concept scope)
-- No persistence between sessions (localStorage planned)
+### Phase 4: Testing & Quality Assurance 🧪
+- [ ] **Kerberon Integration** - Automated testing framework setup
+- [ ] **Medical Document Validation** - Test against real-world scenarios
+- [ ] **Performance Benchmarking** - LSP response time optimization
+- [ ] **End-to-End Testing** - Complete workflow validation
+
+### Phase 5: CI/CD & Documentation 🚀
+- [ ] **GitHub Actions Workflows** - Automated testing and deployment
+- [ ] **Documentation Generation** - Auto-generated API docs and guides
+- [ ] **Release Automation** - Version management and package publishing
+- [ ] **Quality Gates** - Code coverage, linting, and security checks
+
+### Future Enhancements 🔮
+- [ ] **FHIR Export** - HL7 FHIR format export functionality
+- [ ] **Extended Terminology** - RxNorm, SNOMED-CT, CPT codes
+- [ ] **Voice Integration** - Speech-to-text for rapid documentation
+- [ ] **Template System** - Customizable medical note templates
+- [ ] **Multi-provider Support** - Collaborative documentation features
+
 
 ## 📄 License
 
