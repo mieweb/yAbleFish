@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "dev": "npm run dev --workspace=packages/browser-client",
-    "build": "npm run build --workspaces --if-present",
+    "build": "npm run build --workspace=packages/medical-terminology && npm run build --workspace=packages/lsp-server && npm run build --workspace=packages/browser-client",
     "preview": "npm run preview --workspace=packages/browser-client",
     "clean": "npm run clean --workspaces --if-present",
     "test": "npm run test --workspaces --if-present && node test-environments/lsp-integration/test-lsp-comprehensive.mjs",
