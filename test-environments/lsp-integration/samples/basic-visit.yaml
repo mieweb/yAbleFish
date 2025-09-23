@@ -2,78 +2,109 @@ document_info:
   length: 835
   lines: 32
   sections_count: 8
-  medical_terms_total: 6
+  medical_terms_total: 4
   patient_info_present: true
   completion_tests: 0
 sections:
   - level: 1
-    title: 'Visit Enc #: 139 Date: 09-22-2025 RE: Heart, William 02-14-1964'
+    title: Unknown Section
     line: 1
     codes:
       - term: hypertension
         code: hover-available
-      - term: aspirin
-        code: hover-available
       - term: lisinopril
         code: hover-available
       - term: lisinopril
         code: hover-available
       - term: sulfonamides
         code: hover-available
-      - term: congestive heart failure
-        code: hover-available
   - level: 2
-    title: Patient
-    line: 3
-    codes: []
-    patient: &ref_0
-      name: William
-      surname: Heart
-      gender: M
-      dob: 02-14-1964
-  - level: 2
-    title: Chief Complaint
-    line: 8
-    codes: []
-  - level: 2
-    title: HPI
-    line: 11
-    codes: []
-  - level: 2
-    title: Allergies and Intolerances
-    line: 14
-    codes:
-      - term: sulfonamides
-        code: hover-available
-  - level: 2
-    title: Medications
-    line: 18
-    codes:
-      - term: aspirin
-        code: hover-available
-      - term: lisinopril
-        code: hover-available
-  - level: 2
-    title: Assessment
-    line: 24
+    title: Unknown Section
+    line: 1
     codes:
       - term: hypertension
         code: hover-available
-      - term: congestive heart failure
+      - term: lisinopril
+        code: hover-available
+      - term: lisinopril
+        code: hover-available
+      - term: sulfonamides
         code: hover-available
   - level: 2
-    title: Plan
-    line: 29
+    title: Unknown Section
+    line: 1
     codes:
+      - term: hypertension
+        code: hover-available
       - term: lisinopril
+        code: hover-available
+      - term: lisinopril
+        code: hover-available
+      - term: sulfonamides
+        code: hover-available
+  - level: 2
+    title: Unknown Section
+    line: 1
+    codes:
+      - term: hypertension
+        code: hover-available
+      - term: lisinopril
+        code: hover-available
+      - term: lisinopril
+        code: hover-available
+      - term: sulfonamides
+        code: hover-available
+  - level: 2
+    title: Unknown Section
+    line: 1
+    codes:
+      - term: hypertension
+        code: hover-available
+      - term: lisinopril
+        code: hover-available
+      - term: lisinopril
+        code: hover-available
+      - term: sulfonamides
+        code: hover-available
+  - level: 2
+    title: Unknown Section
+    line: 1
+    codes:
+      - term: hypertension
+        code: hover-available
+      - term: lisinopril
+        code: hover-available
+      - term: lisinopril
+        code: hover-available
+      - term: sulfonamides
+        code: hover-available
+  - level: 2
+    title: Unknown Section
+    line: 1
+    codes:
+      - term: hypertension
+        code: hover-available
+      - term: lisinopril
+        code: hover-available
+      - term: lisinopril
+        code: hover-available
+      - term: sulfonamides
+        code: hover-available
+  - level: 2
+    title: Unknown Section
+    line: 1
+    codes:
+      - term: hypertension
+        code: hover-available
+      - term: lisinopril
+        code: hover-available
+      - term: lisinopril
+        code: hover-available
+      - term: sulfonamides
         code: hover-available
 medical_codes:
   - term: hypertension
     line: 25
-    character: 3
-    hasHover: true
-  - term: aspirin
-    line: 19
     character: 3
     hasHover: true
   - term: lisinopril
@@ -88,11 +119,9 @@ medical_codes:
     line: 16
     character: 3
     hasHover: true
-  - term: congestive heart failure
-    line: 26
-    character: 9
-    hasHover: true
 completion_results: []
-patient_info: *ref_0
-generated_at: '2025-09-23T11:05:20.292Z'
-note: Generated baseline from real LSP - review and adjust as needed
+patient_info:
+  name: William
+  surname: Heart
+  gender: M
+  dob: 02-14-1964

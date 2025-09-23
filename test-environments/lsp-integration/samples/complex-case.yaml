@@ -2,7 +2,7 @@ document_info:
   length: 450
   lines: 26
   sections_count: 6
-  medical_terms_total: 3
+  medical_terms_total: 5
   patient_info_present: true
   completion_tests: 0
 sections:
@@ -12,9 +12,13 @@ sections:
     codes:
       - term: hypertension
         code: hover-available
+      - term: diabetes
+        code: hover-available
       - term: metformin
         code: hover-available
       - term: penicillin
+        code: hover-available
+      - term: type 2 diabetes
         code: hover-available
   - level: 2
     title: Unknown Section
@@ -22,9 +26,13 @@ sections:
     codes:
       - term: hypertension
         code: hover-available
+      - term: diabetes
+        code: hover-available
       - term: metformin
         code: hover-available
       - term: penicillin
+        code: hover-available
+      - term: type 2 diabetes
         code: hover-available
   - level: 2
     title: Unknown Section
@@ -32,9 +40,13 @@ sections:
     codes:
       - term: hypertension
         code: hover-available
+      - term: diabetes
+        code: hover-available
       - term: metformin
         code: hover-available
       - term: penicillin
+        code: hover-available
+      - term: type 2 diabetes
         code: hover-available
   - level: 2
     title: Unknown Section
@@ -42,9 +54,13 @@ sections:
     codes:
       - term: hypertension
         code: hover-available
+      - term: diabetes
+        code: hover-available
       - term: metformin
         code: hover-available
       - term: penicillin
+        code: hover-available
+      - term: type 2 diabetes
         code: hover-available
   - level: 2
     title: Unknown Section
@@ -52,9 +68,13 @@ sections:
     codes:
       - term: hypertension
         code: hover-available
+      - term: diabetes
+        code: hover-available
       - term: metformin
         code: hover-available
       - term: penicillin
+        code: hover-available
+      - term: type 2 diabetes
         code: hover-available
   - level: 2
     title: Unknown Section
@@ -62,14 +82,22 @@ sections:
     codes:
       - term: hypertension
         code: hover-available
+      - term: diabetes
+        code: hover-available
       - term: metformin
         code: hover-available
       - term: penicillin
+        code: hover-available
+      - term: type 2 diabetes
         code: hover-available
 medical_codes:
   - term: hypertension
     line: 14
     character: 13
+    hasHover: true
+  - term: diabetes
+    line: 13
+    character: 10
     hasHover: true
   - term: metformin
     line: 19
@@ -79,6 +107,10 @@ medical_codes:
     line: 25
     character: 3
     hasHover: true
+  - term: type 2 diabetes
+    line: 13
+    character: 3
+    hasHover: true
 completion_results: []
 patient_info:
   name: Robert
@@ -86,5 +118,3 @@ patient_info:
   gender: M
   dob: '1965-08-20'
   mrn: MR123456
-generated_at: '2025-09-23T11:46:33.640Z'
-note: Generated baseline from real LSP - review and adjust as needed

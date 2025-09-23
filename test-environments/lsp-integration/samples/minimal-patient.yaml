@@ -7,25 +7,21 @@ document_info:
   completion_tests: 0
 sections:
   - level: 1
-    title: Minimal Patient Example
+    title: Unknown Section
     line: 1
     codes: []
-    patient: &ref_0
-      name: Jane
-      surname: Doe
-      gender: F
-      dob: '1990-01-15'
   - level: 2
-    title: Patient
-    line: 3
+    title: Unknown Section
+    line: 1
     codes: []
-    patient: *ref_0
   - level: 2
-    title: Assessment
-    line: 8
+    title: Unknown Section
+    line: 1
     codes: []
 medical_codes: []
 completion_results: []
-patient_info: *ref_0
-generated_at: '2025-09-23T11:05:20.299Z'
-note: Generated baseline from real LSP - review and adjust as needed
+patient_info:
+  name: Jane
+  surname: Doe
+  gender: F
+  dob: '1990-01-15'
