@@ -41,7 +41,7 @@ yAbelFish is a web-based editor that leverages the Monaco Editor (the core of VS
 
 We ultimately hope this tool becomes [obsolete](https://www.youtube.com/shorts/EjMEPLe1NC8)—superseded by ambient clinical intelligence where structured codes settle as a thin archaeological layer in the history of health tech. Until that future arrives, yAbelFish exists to make producing accurate, semi‑structured medical notes faster, safer, and less frustrating.
 
-As AR-assisted workflows (e.g. Ozwell-style AR glasses) and vector‑DB powered WebChart mature, real‑time semantic capture may remove the need for standalone LSP editors entirely. When that day comes, today’s manual coding friction—and the moral injury caused by poor UX—will just be another stratum of sediment. In the meantime, we focus on pragmatic tooling that helps clinicians now while paving a path toward that ambient, unobtrusive future.
+As AR-assisted workflows (e.g. Ozwell-style AR glasses) and vector‑DB powered WebChart mature, real‑time semantic capture may remove the need for standalone LSP editors entirely. When that day comes, today’s manual coding friction—and the [moral injury](https://youtu.be/L_1PNZdHq6Q) caused by [poor UX](https://youtu.be/xB_tSFJsjsw?si=AjO-gL1l-bU-LmKh)—will just be another stratum of sediment. In the meantime, we focus on pragmatic tooling that helps clinicians now while paving a path toward that ambient, unobtrusive future.
 
 
 ## 🚀 Features
