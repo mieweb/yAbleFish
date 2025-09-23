@@ -75,3 +75,8 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
 - ibuprofen 600 mg tablet
 - Lasix: 20 mg tablet
 - lisinopril 10 mg tablet
+
+
+# Screenshot of EHR
+
+<img width="1142" height="728" alt="Screenshot 2025-09-22 at 11 42 39 PM" src="https://github.com/user-attachments/assets/e725eae0-160e-4d16-8722-c70d277a6df3" />
