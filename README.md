@@ -48,55 +48,67 @@ yAbelFish is a web-based editor that leverages the Monaco Editor (the core of VS
 
 ```mermaid
 graph TB
-    subgraph "Browser Window"
-        subgraph "Header"
-            A[Chief Complaint] 
-            B[HPI] 
-            C[Allergies] 
-            D[Medications] 
-            E[Assessment] 
-            F[Plan]
+    subgraph Browser["🌐 Browser Window"]
+        subgraph Tabs["📋 Navigation Tabs"]
+            ChiefComplaint["Chief Complaint"]
+            HPI["History of Present Illness"]
+            Allergies["Allergies"]
+            Medications["Medications"]
+            Assessment["Assessment"]
+            Plan["Plan"]
         end
         
-        subgraph "Main Container"
-            subgraph "Editor Container"
-                G["Monaco Editor (client)<br/>monaco-languageclient<br/>models: ehr://visit/..."]
-                H["UI Features:<br/>• Diagnostics<br/>• Hover info<br/>• Code actions<br/>• Inlay hints"]
+        subgraph MainContainer["Main Container"]
+            subgraph EditorArea["📝 Editor Area"]
+                MonacoEditor["Monaco Editor<br/>💼 monaco-languageclient<br/>🏥 models: ehr://visit/..."]
+                UIFeatures["🔧 LSP Features<br/>• Diagnostics<br/>• Hover info<br/>• Code actions<br/>• Inlay hints"]
             end
             
-            subgraph "Web Worker"
-                I["LSP Server (browser)<br/>vscode-languageserver/browser"]
-                J["Medical Terminology:<br/>• RxNorm codes<br/>• SNOMED-CT codes<br/>• Allergy terms"]
+            subgraph WorkerThread["⚙️ Web Worker"]
+                LSPServer["LSP Server<br/>🔌 vscode-languageserver/browser"]
+                Terminology["📚 Medical Terminology<br/>• RxNorm codes<br/>• SNOMED-CT codes<br/>• Allergy database"]
             end
             
-            subgraph "Metadata Panel"
-                K["Extracted Codes"]
-                L["Diagnostics"]
-                M["Conflicts"]
+            subgraph MetadataPanel["📊 Live Metadata Panel"]
+                ExtractedCodes["📋 Extracted Codes"]
+                Diagnostics["⚠️ Diagnostics"]
+                Conflicts["🚨 Allergy Conflicts"]
             end
         end
     end
     
-    G <-->|JSON-RPC over<br/>MessagePort| I
-    I --> J
-    G --> H
-    I -->|Updates| K
-    I -->|Updates| L
-    I -->|Updates| M
+    %% Communication flows
+    MonacoEditor <-->|"🔄 JSON-RPC<br/>MessagePort"| LSPServer
+    LSPServer --> Terminology
+    MonacoEditor --> UIFeatures
+    LSPServer -->|"📡 Real-time Updates"| ExtractedCodes
+    LSPServer -->|"📡 Real-time Updates"| Diagnostics
+    LSPServer -->|"📡 Real-time Updates"| Conflicts
     
-    A -.-> G
-    B -.-> G
-    C -.-> G
-    D -.-> G
-    E -.-> G
-    F -.-> G
+    %% Tab interactions
+    ChiefComplaint -.->|"Switch Context"| MonacoEditor
+    HPI -.->|"Switch Context"| MonacoEditor
+    Allergies -.->|"Switch Context"| MonacoEditor
+    Medications -.->|"Switch Context"| MonacoEditor
+    Assessment -.->|"Switch Context"| MonacoEditor
+    Plan -.->|"Switch Context"| MonacoEditor
     
-    style G fill:#2d2d30,stroke:#0078d4,color:#fff
-    style I fill:#252526,stroke:#0078d4,color:#fff
-    style J fill:#1e1e1e,stroke:#569cd6,color:#fff
-    style K fill:#2d2d30,stroke:#00ff00,color:#fff
-    style L fill:#2d2d30,stroke:#ff8c00,color:#fff
-    style M fill:#2d2d30,stroke:#f14c4c,color:#fff
+    %% Styling with VS Code theme colors
+    classDef editor fill:#2d2d30,stroke:#0078d4,stroke-width:2px,color:#fff
+    classDef worker fill:#252526,stroke:#0078d4,stroke-width:2px,color:#fff
+    classDef terminology fill:#1e1e1e,stroke:#569cd6,stroke-width:2px,color:#fff
+    classDef metadata fill:#2d2d30,stroke:#00ff00,stroke-width:2px,color:#fff
+    classDef diagnostics fill:#2d2d30,stroke:#ff8c00,stroke-width:2px,color:#fff
+    classDef conflicts fill:#2d2d30,stroke:#f14c4c,stroke-width:2px,color:#fff
+    classDef tabs fill:#3c3c3c,stroke:#cccccc,stroke-width:1px,color:#fff
+    
+    class MonacoEditor,UIFeatures editor
+    class LSPServer worker
+    class Terminology terminology
+    class ExtractedCodes metadata
+    class Diagnostics diagnostics
+    class Conflicts conflicts
+    class ChiefComplaint,HPI,Allergies,Medications,Assessment,Plan tabs
 ```
 
 ## 📦 Technology Stack
