@@ -18,6 +18,9 @@ import {
   TextDocumentPositionParams,
   TextDocumentSyncKind,
   InitializeResult,
+  DocumentSymbol,
+  SymbolKind,
+  DocumentSymbolParams,
 } from 'vscode-languageserver/node';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
@@ -68,6 +71,8 @@ connection.onInitialize((params: InitializeParams) => {
       codeActionProvider: true,
       // Support inlay hints
       inlayHintProvider: true,
+      // Support document symbols (structure)
+      documentSymbolProvider: true,
     },
   };
 
@@ -247,6 +252,104 @@ connection.onCodeAction(async params => {
   // Implementation depends on specific requirements
   return [];
 });
+
+// Handle document symbol requests - provide document structure
+connection.onDocumentSymbol(async (params: DocumentSymbolParams): Promise<DocumentSymbol[]> => {
+  const document = documents.get(params.textDocument.uri);
+  if (!document) {
+    return [];
+  }
+
+  try {
+    // Parse the document to get its structure
+    const parsed = parser.parse(document.getText());
+    const symbols: DocumentSymbol[] = [];
+
+    // Convert hierarchical sections to DocumentSymbol format
+    for (const section of parsed.structure.hierarchical) {
+      const symbol = convertSectionToSymbol(section, document);
+      symbols.push(symbol);
+    }
+
+    return symbols;
+  } catch (error) {
+    connection.console.error(`Error parsing document symbols: ${error}`);
+    return [];
+  }
+});
+
+// Helper function to convert ParsedSection to DocumentSymbol
+function convertSectionToSymbol(section: any, document: TextDocument): DocumentSymbol {
+  // Determine symbol kind based on section type
+  let kind: SymbolKind = SymbolKind.String; // Default
+  
+  switch (section.type?.toLowerCase()) {
+    case 'patient':
+    case 'demographics':
+      kind = SymbolKind.Object;
+      break;
+    case 'vitals':
+    case 'assessment':
+    case 'plan':
+    case 'medications':
+    case 'allergies':
+      kind = SymbolKind.Class;
+      break;
+    case 'chief complaint':
+    case 'cc':
+      kind = SymbolKind.Key;
+      break;
+    case 'history':
+    case 'hpi':
+    case 'pmh':
+    case 'psh':
+    case 'fh':
+    case 'sh':
+      kind = SymbolKind.Module;
+      break;
+    case 'physical exam':
+    case 'pe':
+    case 'exam':
+      kind = SymbolKind.Method;
+      break;
+    case 'labs':
+    case 'radiology':
+    case 'diagnostics':
+      kind = SymbolKind.Array;
+      break;
+    default:
+      if (section.level <= 2) {
+        kind = SymbolKind.Class;
+      } else {
+        kind = SymbolKind.Property;
+      }
+  }
+
+  // Calculate ranges
+  const startPos = document.positionAt(section.startOffset || 0);
+  const endPos = document.positionAt(section.endOffset || document.getText().length);
+  
+  // For selection range, use just the header/title
+  const headerEndOffset = section.startOffset + (section.header?.length || section.title?.length || 10);
+  const selectionEndPos = document.positionAt(Math.min(headerEndOffset, section.endOffset || document.getText().length));
+
+  const symbol: DocumentSymbol = {
+    name: section.title || section.header || section.type || 'Unknown Section',
+    detail: section.type ? `(${section.type})` : undefined,
+    kind,
+    range: {
+      start: startPos,
+      end: endPos,
+    },
+    selectionRange: {
+      start: startPos,
+      end: selectionEndPos,
+    },
+    children: section.children ? section.children.map((child: any) => convertSectionToSymbol(child, document)) : [],
+  };
+
+  return symbol;
+}
 
 // Note: Inlay hints would require additional LSP capabilities configuration
 

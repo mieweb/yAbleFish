@@ -27,6 +27,18 @@ interface MetadataUpdate {
   uri: string;
   codes: ExtractedCode[];
   diagnostics: any[];
+  patient?: {
+    uid?: string;
+    name?: string;
+    surname?: string;
+    mrn?: string;
+    dob?: string;
+    gender?: string;
+    email?: string;
+    phone?: any[];
+    address?: any;
+    summary?: string;
+  };
 }
 
 class YAbelFishEditor {
@@ -38,6 +50,7 @@ class YAbelFishEditor {
   private sectionRanges = new Map<Section, { start: number; end: number }>();
   private sectionTitles = new Map<Section, string>();
   private availableSections = new Set<Section>();
+  private patientInfo = new Map<string, any>();
 
   // Single document content with all sections
   private documentContent = `# Visit Enc #: 139 Date: 09-22-2025 RE: Heart, William 02-14-1964
@@ -230,9 +243,12 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
   }
 
   private handleMetadataUpdate(update: MetadataUpdate) {
-    // Store the codes and diagnostics
+    // Store the codes, diagnostics, and patient info
     this.extractedCodes.set(update.uri, update.codes);
     this.diagnostics.set(update.uri, update.diagnostics);
+    if (update.patient) {
+      this.patientInfo.set(update.uri, update.patient);
+    }
 
     // Update UI (always update since we have single model)
     const currentUri = this.model.uri.toString();
@@ -255,52 +271,279 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
     const currentUri = this.model.uri.toString();
     const codes = this.extractedCodes.get(currentUri) || [];
     const diagnostics = this.diagnostics.get(currentUri) || [];
+    const patient = this.patientInfo.get(currentUri);
 
-    // Update codes list - now inline
-    const codesList = document.getElementById('codes-list');
-    if (codesList) {
-      if (codes.length === 0) {
-        codesList.innerHTML =
-          '<div class="empty-state">No medical codes detected yet</div>';
-      } else {
-        codesList.innerHTML = codes
-          .map(
-            code => `
-          <span class="code-item">
-            <span class="code-term">${code.term}</span>
-            <span class="code-id">${code.code}</span>
-          </span>
-        `
-          )
-          .join('');
-      }
-    }
+    // Build hierarchical document structure
+    const documentStructure = document.getElementById('document-structure');
+    if (documentStructure) {
+      const content = this.model.getValue();
+      const structure = this.buildDocumentStructure(content, codes, diagnostics, patient);
+      documentStructure.innerHTML = structure;
 
-    // Update diagnostics list
-    const diagnosticsList = document.getElementById('diagnostics-list');
-    if (diagnosticsList) {
-      if (diagnostics.length === 0) {
-        diagnosticsList.innerHTML =
-          '<div class="empty-state">No issues detected</div>';
-      } else {
-        diagnosticsList.innerHTML = diagnostics
-          .map(
-            diag => `
-          <div class="diagnostic-item ${diag.severity === 1 ? 'error' : 'warning'}">
-            <div class="diagnostic-icon">${diag.severity === 1 ? '🚨' : '⚠️'}</div>
-            <div class="diagnostic-content">
-              <div class="diagnostic-message">${diag.message}</div>
-              <div class="diagnostic-code">${diag.code || 'VALIDATION'}</div>
-            </div>
-          </div>
-        `
-          )
-          .join('');
-      }
+      // Add click handlers for navigation
+      // Handle heading clicks
+      documentStructure.querySelectorAll('.toc-heading').forEach(header => {
+        header.addEventListener('click', (e) => {
+          const lineStr = (e.currentTarget as HTMLElement).dataset.line;
+          if (lineStr) {
+            const line = parseInt(lineStr);
+            
+            // Get the line content to determine selection range
+            const model = this.editor.getModel();
+            if (model) {
+              const lineContent = model.getLineContent(line);
+              const headingMatch = lineContent.match(/^(#+)\s*(.+)$/);
+              
+              if (headingMatch) {
+                const headingPrefix = headingMatch[1] + ' '; // "## " or "# " etc.
+                const startColumn = headingPrefix.length + 1; // Start after "## "
+                const endColumn = lineContent.length + 1; // End of line
+                
+                // Select the heading text (without the # markers)
+                this.editor.setSelection({
+                  startLineNumber: line,
+                  startColumn: startColumn,
+                  endLineNumber: line,
+                  endColumn: endColumn
+                });
+              } else {
+                // Fallback: select entire line if not a standard heading
+                const fallbackModel = this.editor.getModel();
+                const endCol = fallbackModel ? fallbackModel.getLineContent(line).length + 1 : 1;
+                this.editor.setSelection({
+                  startLineNumber: line,
+                  startColumn: 1,
+                  endLineNumber: line,
+                  endColumn: endCol
+                });
+              }
+            }
+            
+            this.editor.revealLineInCenter(line);
+            this.editor.focus();
+          }
+        });
+      });
+
+      // Handle code item clicks
+      documentStructure.querySelectorAll('.code-item').forEach(codeItem => {
+        codeItem.addEventListener('click', (e) => {
+          const lineStr = (e.currentTarget as HTMLElement).dataset.line;
+          const columnStr = (e.currentTarget as HTMLElement).dataset.column;
+          const endColumnStr = (e.currentTarget as HTMLElement).dataset.endColumn;
+          if (lineStr && columnStr) {
+            const line = parseInt(lineStr);
+            const startColumn = parseInt(columnStr);
+            const endColumn = endColumnStr ? parseInt(endColumnStr) : startColumn;
+            
+            // Set selection range to highlight the medical term
+            this.editor.setSelection({
+              startLineNumber: line,
+              startColumn: startColumn,
+              endLineNumber: line,
+              endColumn: endColumn
+            });
+            this.editor.revealLineInCenter(line);
+            this.editor.focus();
+          }
+        });
+      });
+
+      // Handle patient info clicks
+      documentStructure.querySelectorAll('.patient-name, .patient-meta').forEach(patientElement => {
+        patientElement.addEventListener('click', (e) => {
+          // Find the patient section line (the heading that contains this patient info)
+          const tocSection = (e.currentTarget as HTMLElement).closest('.toc-section');
+          const tocHeading = tocSection?.querySelector('.toc-heading');
+          const lineStr = tocHeading?.getAttribute('data-line');
+          
+          if (lineStr) {
+            const line = parseInt(lineStr);
+            
+            // Navigate to the patient section and select the content
+            const model = this.editor.getModel();
+            if (model) {
+              // Find patient data in the section (look for typical patient info patterns)
+              let foundPatientData = false;
+              const totalLines = model.getLineCount();
+              
+              for (let i = line + 1; i <= Math.min(line + 20, totalLines); i++) {
+                const lineContent = model.getLineContent(i);
+                // Look for patient info patterns like "Name:", "DOB:", etc.
+                if (lineContent.match(/\b(name|dob|date of birth|mrn|gender|age)\b/i)) {
+                  this.editor.setSelection({
+                    startLineNumber: i,
+                    startColumn: 1,
+                    endLineNumber: i,
+                    endColumn: lineContent.length + 1
+                  });
+                  this.editor.revealLineInCenter(i);
+                  foundPatientData = true;
+                  break;
+                }
+              }
+              
+              // Fallback: just go to the section heading
+              if (!foundPatientData) {
+                this.editor.setPosition({ lineNumber: line, column: 1 });
+                this.editor.revealLineInCenter(line);
+              }
+            }
+            
+            this.editor.focus();
+          }
+        });
+      });
     }
 
     // Update section summary
     this.updateSectionSummary();
+  }
+
+  private buildDocumentStructure(content: string, codes: ExtractedCode[], diagnostics: any[], patient: any): string {
+    const lines = content.split('\n');
+    const sections: Array<{
+      level: number;
+      title: string;
+      line: number;
+      codes: ExtractedCode[];
+      diagnostics: any[];
+      patient?: any;
+    }> = [];
+
+    // Parse headings first to build section boundaries
+    const headings: Array<{ level: number; line: number; title: string }> = [];
+    lines.forEach((line, index) => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('#')) {
+        const match = trimmed.match(/^(#+)\s*(.+)/);
+        if (match) {
+          const level = match[1].length;
+          const title = match[2].trim().replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c] || c));
+          headings.push({ level, line: index + 1, title });
+        }
+      }
+    });
+
+    // Function to find which section a line belongs to
+    const findSectionForLine = (lineNumber: number) => {
+      let bestHeading = null;
+      for (let i = headings.length - 1; i >= 0; i--) {
+        if (headings[i].line <= lineNumber) {
+          bestHeading = headings[i];
+          break;
+        }
+      }
+      return bestHeading;
+    };
+
+    // Build sections with proper code association - only direct children
+    headings.forEach(heading => {
+      // Find the next heading at the same level or higher (lower level number)
+      const nextSameLevelIndex = headings.findIndex(h => h.line > heading.line && h.level <= heading.level);
+      
+      // Find the next heading at any deeper level (higher level number) 
+      const nextDeeperLevelIndex = headings.findIndex(h => h.line > heading.line && h.level > heading.level);
+      
+      // Section ends at the next deeper heading OR next same/higher level heading
+      let sectionEnd = lines.length;
+      if (nextDeeperLevelIndex >= 0 && (nextSameLevelIndex < 0 || headings[nextDeeperLevelIndex].line < headings[nextSameLevelIndex].line)) {
+        // There's a deeper level heading before any same-level heading
+        sectionEnd = headings[nextDeeperLevelIndex].line - 1;
+      } else if (nextSameLevelIndex >= 0) {
+        // There's a same/higher level heading
+        sectionEnd = headings[nextSameLevelIndex].line - 1;
+      }
+      
+      // Find codes that belong directly to this section (not in subsections)
+      const sectionCodes = codes.filter(code => {
+        const codeLine = code.range.startLineNumber;
+        return codeLine > heading.line && codeLine <= sectionEnd;
+      });
+      
+      // Find diagnostics that belong directly to this section
+      const sectionDiagnostics = diagnostics.filter(diag => {
+        const diagLine = diag.range?.startLineNumber || 0;
+        return diagLine > heading.line && diagLine <= sectionEnd;
+      });
+
+      // Check if this is a patient section
+      const isPatientSection = heading.title.toLowerCase().includes('patient');
+      
+      sections.push({
+        level: heading.level,
+        title: heading.title,
+        line: heading.line,
+        codes: sectionCodes,
+        diagnostics: sectionDiagnostics,
+        patient: isPatientSection ? patient : undefined
+      });
+    });
+
+    if (sections.length === 0) {
+      return '<div class="empty-state">No document structure detected</div>';
+    }
+
+    return sections.map(section => {
+      const badges = [];
+      if (section.codes.length > 0) badges.push(`<span class="section-badge">${section.codes.length} codes</span>`);
+      if (section.diagnostics.length > 0) badges.push(`<span class="section-badge" style="background: rgba(255,68,68,0.2); color: #ff4444;">${section.diagnostics.length} issues</span>`);
+      if (section.patient) badges.push(`<span class="section-badge" style="background: rgba(0,200,100,0.2); color: #00c864;">patient</span>`);
+
+      let sectionContent = '';
+      
+      // Add patient details if this is a patient section
+      if (section.patient) {
+        const patientName = `${section.patient.name || ''} ${section.patient.surname || ''}`.trim() || '';
+        const nameDisplay = patientName || '[No Name]';
+        const dobDisplay = section.patient.dob || '[No DOB]';
+        const sexDisplay = section.patient.gender || '[No Sex]';
+
+        sectionContent += `
+          <div class="patient-details">
+            <div class="patient-name">Name: ${nameDisplay}</div>
+            <div class="patient-meta">DOB: ${dobDisplay} • Sex: ${sexDisplay}</div>
+          </div>
+        `;
+      }
+
+      // Add diagnostics for this section (keep these on the left)
+      if (section.diagnostics.length > 0) {
+        sectionContent += `
+          <div class="diagnostics-in-section">
+            ${section.diagnostics.map(diag => 
+              `<div class="diagnostic-item-inline">${diag.message}</div>`
+            ).join('')}
+          </div>
+        `;
+      }
+
+      return `
+        <div class="toc-section level-${Math.min(section.level, 3)}">
+          <div class="toc-heading" data-line="${section.line}">
+            <span class="heading-level">H${section.level}</span>
+            <span class="heading-title">${section.title}</span>
+            <div class="section-badges">
+              ${badges.join('')}
+            </div>
+          </div>
+          ${sectionContent ? `<div class="section-content">${sectionContent}</div>` : ''}
+          ${section.codes.length > 0 ? `
+            <ul class="code-list">
+              ${section.codes.map(code => 
+                `<li class="code-item" 
+                     data-line="${code.range.startLineNumber}" 
+                     data-column="${((code.range as any).start?.character || 0) + 1}" 
+                     data-end-column="${((code.range as any).end?.character || 0) + 1}">
+                  <span class="code-term">${code.term}</span>
+                  <span class="code-value">${code.code}</span>
+                </li>`
+              ).join('')}
+            </ul>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
   }
 
   private updateSectionSummary() {
@@ -418,59 +661,11 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
       });
     }
 
-    // Update headings list when sections change
-    this.updateHeadingsList();
+    // Update metadata panel when sections change
+    this.updateMetadataPanel();
   }
 
-  /**
-   * Update the headings list in the metadata panel
-   */
-  private updateHeadingsList() {
-    const content = this.model.getValue();
-    const lines = content.split('\n');
-    const headings: { level: number; text: string; line: number }[] = [];
 
-    lines.forEach((line, index) => {
-      const trimmed = line.trim();
-      if (trimmed.startsWith('#')) {
-        const match = trimmed.match(/^(#+)\s*(.+)/);
-        if (match) {
-          const level = match[1].length;
-          const text = match[2].trim();
-          headings.push({ level, text, line: index + 1 });
-        }
-      }
-    });
-
-    const headingsList = document.getElementById('headings-list');
-    if (headingsList) {
-      if (headings.length === 0) {
-        headingsList.innerHTML =
-          '<div class="empty-state">No headings detected</div>';
-      } else {
-        headingsList.innerHTML = headings
-          .map(
-            heading => `
-          <div class="heading-item" data-line="${heading.line}">
-            <span class="heading-level">H${heading.level}</span>
-            <span class="heading-text">${heading.text}</span>
-          </div>
-        `
-          )
-          .join('');
-
-        // Add click handlers for heading navigation
-        headingsList.querySelectorAll('.heading-item').forEach(item => {
-          item.addEventListener('click', () => {
-            const line = parseInt(item.getAttribute('data-line') || '1');
-            this.editor.revealLineInCenter(line);
-            this.editor.setPosition({ lineNumber: line, column: 1 });
-            this.editor.focus();
-          });
-        });
-      }
-    }
-  }
 
 
 

@@ -286,6 +286,9 @@ yAbleFish/
 - `npm run dev` - Start development server with hot reload
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build locally
+- `npm test` - Run all tests (workspace tests + LSP integration tests)
+- `npm run test:lsp` - Run comprehensive LSP tests (real server communication)
+- `npm run lint` - Run ESLint code quality checks
 
 ## 🔮 Medical Terminology
 

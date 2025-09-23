@@ -135,6 +135,19 @@ export class MedicalTerminology {
         contextHints: ['meds', 'plan'],
       },
       {
+        term: 'furosemide',
+        codes: [
+          {
+            code: '4603',
+            description: 'Furosemide',
+            type: 'rxnorm',
+            category: 'medication',
+          },
+        ],
+        aliases: ['lasix'],
+        contextHints: ['meds', 'plan'],
+      },
+      {
         term: 'furosemide 20 mg',
         codes: [
           {
@@ -158,7 +171,7 @@ export class MedicalTerminology {
             category: 'allergy',
           },
         ],
-        aliases: ['pcn'],
+        aliases: ['pcn', 'penicillins'],
         contextHints: ['allergies'],
       },
       {
@@ -230,10 +243,12 @@ export class MedicalTerminology {
 
     const normalizedText = text.toLowerCase();
 
-    // Check all indexed terms
-    for (const [normalizedTerm, term] of this.terms.entries()) {
+    // Helper function to find matches with better punctuation handling
+    const findMatches = (searchTerm: string, term: MedicalTerm) => {
+      // Create a regex that handles word boundaries better with punctuation
+      // This allows matching "lasix" in "Lasix:", "lasix.", "lasix," etc.
       const regex = new RegExp(
-        `\\b${this.escapeRegex(normalizedTerm)}\\b`,
+        `(?<=^|[\\s\\n]|[^\\w])${this.escapeRegex(searchTerm)}(?=[\\s\\n]|[^\\w]|$)`,
         'gi'
       );
       let match;
@@ -245,23 +260,16 @@ export class MedicalTerminology {
           end: match.index + match[0].length,
         });
       }
+    };
+
+    // Check all indexed terms
+    for (const [normalizedTerm, term] of this.terms.entries()) {
+      findMatches(normalizedTerm, term);
     }
 
     // Check aliases
     for (const [normalizedAlias, term] of this.aliasIndex.entries()) {
-      const regex = new RegExp(
-        `\\b${this.escapeRegex(normalizedAlias)}\\b`,
-        'gi'
-      );
-      let match;
-      while ((match = regex.exec(normalizedText)) !== null) {
-        matches.push({
-          term,
-          match: text.substring(match.index, match.index + match[0].length),
-          start: match.index,
-          end: match.index + match[0].length,
-        });
-      }
+      findMatches(normalizedAlias, term);
     }
 
     return matches.sort((a, b) => a.start - b.start);

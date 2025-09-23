@@ -23,6 +23,78 @@ const extractedCodes = new Map<
   Array<{ term: string; code: string; range: any }>
 >();
 
+/**
+ * Extract patient information from document text
+ * Simple implementation that looks for Patient section
+ */
+function extractPatientInfo(text: string): any {
+  // Look for Patient section - capture content until next section or end
+  const patientMatch = text.match(/##\s+Patient\s*\n([\s\S]*?)(?=\n##|\n*$)/m);
+  if (!patientMatch) {
+    console.log('No patient section found');
+    return null;
+  }
+
+  const patientSection = patientMatch[1];
+  console.log('Patient section found:', patientSection);
+  const patient: any = {};
+
+  // Extract basic fields using simple regex patterns
+  const nameMatch = patientSection.match(/Name:\s*(.+)/i);
+  if (nameMatch && nameMatch[1].trim()) {
+    const fullName = nameMatch[1].trim();
+    const nameParts = fullName.split(' ');
+    patient.name = nameParts[0];
+    if (nameParts.length > 1) {
+      patient.surname = nameParts.slice(1).join(' ');
+    }
+  } else {
+    // Explicitly set empty name fields when name is deleted or empty
+    patient.name = '';
+    patient.surname = '';
+  }
+
+  const sexMatch = patientSection.match(/(Sex|Gender):\s*(.+)/i);
+  if (sexMatch) {
+    patient.gender = sexMatch[2].trim().charAt(0).toUpperCase();
+    console.log('Sex/Gender found:', patient.gender);
+  } else {
+    console.log('No sex/gender match found in:', patientSection);
+  }
+
+  const dobMatch = patientSection.match(/(DOB|Date of Birth|Birth Date|Birthdate):\s*(.+)/i);
+  if (dobMatch) {
+    patient.dob = dobMatch[2].trim();
+    console.log('DOB found:', patient.dob);
+  } else {
+    console.log('No DOB match found in:', patientSection);
+  }
+
+  const mrnMatch = patientSection.match(/MRN:\s*(.+)/i);
+  if (mrnMatch) {
+    patient.mrn = mrnMatch[1].trim();
+  }
+
+  const emailMatch = patientSection.match(/Email:\s*(.+)/i);
+  if (emailMatch) {
+    patient.email = emailMatch[1].trim();
+  }
+
+  const phoneMatch = patientSection.match(/Phone:\s*(.+)/i);
+  if (phoneMatch) {
+    patient.phone = [{ number: phoneMatch[1].trim() }];
+  }
+
+  // Generate UID if we have a name
+  if (patient.name || patient.surname) {
+    patient.uid = `${patient.name || ''}${patient.surname || ''}`.replace(/\s+/g, '').toUpperCase();
+  }
+
+  // Always return patient object if we found a patient section
+  // This ensures we show patient info even when name is empty
+  return patient;
+}
+
 // Initialize when receiving port from main thread
 self.onmessage = (e: MessageEvent) => {
   if (e.data?.type === 'lsp-init' && e.ports?.length) {
@@ -63,18 +135,39 @@ function handleDocumentChange(uri: string, text: string) {
   // Parse document
   const parsedDoc = parser.parse(text);
 
-  // Extract medical terms
+  // Extract medical terms with proper line calculation
   const matches = terminology.findTermsInText(text);
-  const codes = matches.map(match => ({
-    term: match.term.term,
-    code: match.term.codes[0]?.code || '',
-    range: {
-      start: { line: 0, character: match.start },
-      end: { line: 0, character: match.end },
-    },
-  }));
+  const lines = text.split('\n');
+  
+  const codes = matches.map(match => {
+    // Calculate which line the match is on
+    let currentPos = 0;
+    let lineNumber = 0;
+    
+    for (let i = 0; i < lines.length; i++) {
+      if (currentPos + lines[i].length >= match.start) {
+        lineNumber = i;
+        break;
+      }
+      currentPos += lines[i].length + 1; // +1 for newline
+    }
+    
+    return {
+      term: match.term.term,
+      code: match.term.codes[0]?.code || '',
+      range: {
+        start: { line: lineNumber, character: match.start - currentPos },
+        end: { line: lineNumber, character: match.end - currentPos },
+        startLineNumber: lineNumber + 1, // 1-based for Monaco Editor compatibility
+        endLineNumber: lineNumber + 1,
+      },
+    };
+  });
 
   extractedCodes.set(uri, codes);
+
+  // Extract patient information
+  const patient = extractPatientInfo(text);
 
   // Check for allergy conflicts
   const diagnostics = validateDocument(uri, text, parsedDoc);
@@ -86,6 +179,7 @@ function handleDocumentChange(uri: string, text: string) {
       uri,
       codes,
       diagnostics,
+      patient,
     },
   });
 }

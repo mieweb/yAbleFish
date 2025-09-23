@@ -11,7 +11,8 @@
     "build": "npm run build --workspaces --if-present",
     "preview": "npm run preview --workspace=packages/browser-client",
     "clean": "npm run clean --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present && node test-environments/lsp-integration/test-lsp-comprehensive.mjs",
+    "test:lsp": "node test-environments/lsp-integration/test-lsp-comprehensive.mjs",
     "lint": "npm run lint --workspaces --if-present",
     "lint:fix": "npm run lint:fix --workspaces --if-present",
     "format": "npm run format --workspaces --if-present",
@@ -42,5 +43,8 @@
     "type": "git",
     "url": "https://github.com/mieweb/yAbleFish.git"
   },
-  "homepage": "https://yabelfish.com"
+  "homepage": "https://yabelfish.com",
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  }
 }

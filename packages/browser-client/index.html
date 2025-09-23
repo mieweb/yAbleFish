@@ -338,6 +338,199 @@
             font-style: italic;
         }
 
+        /* Patient Information */
+        .patient-summary {
+            padding: 10px;
+            border-radius: 6px;
+            background: rgba(0, 122, 255, 0.1);
+            border-left: 3px solid #007acc;
+            margin-bottom: 8px;
+        }
+
+        .patient-name {
+            font-weight: bold;
+            font-size: 14px;
+            color: #007acc;
+            margin-bottom: 4px;
+        }
+
+        .patient-demographics {
+            font-size: 12px;
+            color: #cccccc;
+            margin-bottom: 4px;
+        }
+
+        .patient-contact {
+            font-size: 11px;
+            color: #999999;
+            margin-top: 2px;
+        }
+
+        /* Hierarchical Document Structure */
+        .toc-section {
+            margin: 12px 0;
+            border-left: 2px solid #333;
+            padding-left: 12px;
+        }
+
+        .toc-section.level-1 {
+            border-left-color: #007acc;
+            margin-left: 0;
+        }
+
+        .toc-section.level-2 {
+            border-left-color: #00a0ff;
+            margin-left: 16px;
+        }
+
+        .toc-section.level-3 {
+            border-left-color: #66c2ff;
+            margin-left: 32px;
+        }
+
+        .toc-heading {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 4px 0;
+            font-weight: 500;
+            color: #cccccc;
+            margin-bottom: 6px;
+            transition: color 0.2s ease;
+        }
+
+        .heading-level {
+            font-size: 10px;
+            color: #888;
+            min-width: 20px;
+        }
+
+        .heading-title {
+            flex: 1;
+            font-size: 14px;
+        }
+
+        .toc-heading:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            padding: 4px 8px;
+            margin: 0 -8px;
+        }
+
+        .section-badge {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            background: rgba(0, 122, 204, 0.2);
+            color: #007acc;
+            font-weight: normal;
+        }
+
+        .section-content {
+            margin-top: 8px;
+            margin-left: 8px;
+        }
+
+        .patient-details {
+            background: rgba(0, 122, 255, 0.1);
+            border-radius: 6px;
+            padding: 8px;
+            margin: 4px 0;
+            font-size: 12px;
+        }
+
+        .patient-name, .patient-meta {
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            border-radius: 4px;
+            padding: 2px 4px;
+            margin: -2px -4px;
+        }
+
+        .patient-name:hover, .patient-meta:hover {
+            background: rgba(0, 122, 255, 0.2);
+        }
+
+        .patient-name {
+            font-weight: bold;
+            color: #007acc;
+            margin-bottom: 2px;
+        }
+
+        .patient-meta {
+            color: #999;
+            font-size: 11px;
+        }
+
+        .codes-in-section {
+            margin-top: 4px;
+        }
+
+        .code-item-inline {
+            display: inline-block;
+            margin: 2px 4px 2px 0;
+            padding: 2px 6px;
+            background: rgba(255, 165, 0, 0.15);
+            border-radius: 4px;
+            font-size: 11px;
+            color: #ffb366;
+        }
+
+        .code-list {
+            list-style: none;
+            margin: 8px 0 0 8px;
+            padding: 0;
+        }
+
+        .code-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 8px;
+            margin: 2px 0;
+            background: rgba(255, 165, 0, 0.08);
+            border-Radius: 4px;
+            border-left: 2px solid #ffb366;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .code-item:hover {
+            background: rgba(255, 165, 0, 0.15);
+        }
+
+        .code-term {
+            font-size: 12px;
+            color: #cccccc;
+            flex: 1;
+            margin-right: 12px;
+        }
+
+        .code-value {
+            font-size: 11px;
+            color: #ffb366;
+            font-weight: 600;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            white-space: nowrap;
+        }
+
+        .diagnostics-in-section {
+            margin-top: 4px;
+        }
+
+        .diagnostic-item-inline {
+            display: block;
+            margin: 2px 0;
+            padding: 4px 8px;
+            background: rgba(255, 0, 0, 0.1);
+            border-left: 2px solid #ff4444;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #ff8888;
+        }
+
         /* Error Container */
         .error-container {
             display: flex;
@@ -450,7 +643,17 @@
             <div class="metadata-content">
                 <div class="metadata-section">
                     <h3>
-                        <span class="section-icon">📑</span>
+                        <span class="section-icon">�</span>
+                        Patient Information
+                    </h3>
+                    <div id="patient-info">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+
+                <div class="metadata-section">
+                    <h3>
+                        <span class="section-icon">�📑</span>
                         Document Structure
                     </h3>
                     <div id="headings-list">
@@ -460,11 +663,11 @@
 
                 <div class="metadata-section">
                     <h3>
-                        <span class="section-icon">🏷️</span>
-                        Extracted Codes
+                        <span class="section-icon">📋</span>
+                        Document Structure
                     </h3>
-                    <div id="codes-list">
-                        <!-- Dynamic content -->
+                    <div id="document-structure">
+                        <!-- Dynamic hierarchical content -->
                     </div>
                 </div>
 

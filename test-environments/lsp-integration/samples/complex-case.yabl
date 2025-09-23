@@ -1,0 +1,26 @@
+# Complex Medical Case
+
+## Patient
+Name: Robert Johnson
+Sex: Male  
+DOB: 1965-08-20
+MRN: MR123456
+
+## Chief Complaint
+Multiple medical issues
+
+## Assessment
+- Type 2 diabetes mellitus
+- Essential hypertension  
+- Coronary artery disease
+- Chronic kidney disease
+
+## Medications
+- Metformin 500 mg twice daily
+- Lisinopril 20 mg daily
+- Atorvastatin 40 mg daily
+- Furosemide 40 mg daily
+
+## Allergies and Intolerances
+- Penicillin - rash
+- Sulfa drugs
