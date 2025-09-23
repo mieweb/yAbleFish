@@ -62,10 +62,10 @@ export class DiagnosticsProvider {
     );
     const patientAllergies = new Set(
       allergyTerms
-        .filter(match =>
-          match.term.codes.some(code => code.category === 'allergy')
+        .filter((match: any) =>
+          match.term.codes.some((code: any) => code.category === 'allergy')
         )
-        .map(match => match.term.term.toLowerCase())
+        .map((match: any) => match.term.term.toLowerCase())
     );
 
     // Check medications section for conflicts
@@ -78,7 +78,7 @@ export class DiagnosticsProvider {
         medicationsSection.content
       );
 
-      medicationTerms.forEach(medMatch => {
+      medicationTerms.forEach((medMatch: any) => {
         // Check for penicillin allergy vs penicillin-based medications
         if (
           patientAllergies.has('penicillin allergy') ||

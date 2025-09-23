@@ -49,7 +49,7 @@ export class CompletionProvider {
 
     // Convert to LSP completion items
     const completionItems: CompletionItem[] = termCompletions.map(
-      (completion, index) => {
+      (completion: { term: any; relevance: number }, index: number) => {
         const term = completion.term;
         const primaryCode = term.codes[0];
 
