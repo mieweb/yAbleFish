@@ -1,6 +1,6 @@
 /**
  * LSP Completion Provider
- * 
+ *
  * Provides intelligent code completion for medical terms based on context.
  */
 
@@ -10,7 +10,7 @@ import {
   CompletionParams,
   Position,
   Range,
-  TextDocumentPositionParams
+  TextDocumentPositionParams,
 } from 'vscode-languageserver';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { MedicalTerminology } from '../medical/terminology';
@@ -31,11 +31,11 @@ export class CompletionProvider {
   ): Promise<CompletionItem[]> {
     const text = document.getText();
     const offset = document.offsetAt(position);
-    
+
     // Get the word being typed
     const wordRange = this.getWordRangeAtPosition(text, offset);
     const partialWord = text.substring(wordRange.start, wordRange.end);
-    
+
     if (partialWord.length < 2) {
       return []; // Don't show completions for very short inputs
     }
@@ -45,41 +45,49 @@ export class CompletionProvider {
     const context = this.getContextAtPosition(parsedDoc, position);
 
     // Get medical term completions
-    const termCompletions = this.terminology.getCompletions(partialWord, context);
+    const termCompletions = this.terminology.getCompletions(
+      partialWord,
+      context
+    );
 
     // Convert to LSP completion items
-    const completionItems: CompletionItem[] = termCompletions.map((completion, index) => {
-      const term = completion.term;
-      const primaryCode = term.codes[0];
-      
-      return {
-        label: term.term,
-        kind: this.getCompletionKind(primaryCode.type),
-        detail: `${primaryCode.code} - ${primaryCode.type.toUpperCase()}`,
-        documentation: {
-          kind: 'markdown',
-          value: this.buildDocumentation(term)
-        },
-        sortText: String(index).padStart(3, '0'), // Maintain relevance order
-        filterText: term.term,
-        insertText: term.term,
-        data: {
-          term: term.term,
-          codes: term.codes
-        }
-      };
-    });
+    const completionItems: CompletionItem[] = termCompletions.map(
+      (completion, index) => {
+        const term = completion.term;
+        const primaryCode = term.codes[0];
+
+        return {
+          label: term.term,
+          kind: this.getCompletionKind(primaryCode.type),
+          detail: `${primaryCode.code} - ${primaryCode.type.toUpperCase()}`,
+          documentation: {
+            kind: 'markdown',
+            value: this.buildDocumentation(term),
+          },
+          sortText: String(index).padStart(3, '0'), // Maintain relevance order
+          filterText: term.term,
+          insertText: term.term,
+          data: {
+            term: term.term,
+            codes: term.codes,
+          },
+        };
+      }
+    );
 
     // Add snippet completions for common patterns
     const snippetCompletions = this.getSnippetCompletions(context, partialWord);
-    
+
     return [...completionItems, ...snippetCompletions];
   }
 
   /**
    * Get word range at position
    */
-  private getWordRangeAtPosition(text: string, offset: number): { start: number; end: number } {
+  private getWordRangeAtPosition(
+    text: string,
+    offset: number
+  ): { start: number; end: number } {
     let start = offset;
     let end = offset;
 
@@ -99,7 +107,10 @@ export class CompletionProvider {
   /**
    * Get context at position (which section we're in)
    */
-  private getContextAtPosition(document: ParsedDocument, position: Position): string | undefined {
+  private getContextAtPosition(
+    document: ParsedDocument,
+    position: Position
+  ): string | undefined {
     // Find the section containing this position
     for (const section of document.sections) {
       if (this.isPositionInRange(position, section.range)) {
@@ -116,15 +127,21 @@ export class CompletionProvider {
     if (position.line < range.start.line || position.line > range.end.line) {
       return false;
     }
-    
-    if (position.line === range.start.line && position.character < range.start.character) {
+
+    if (
+      position.line === range.start.line &&
+      position.character < range.start.character
+    ) {
       return false;
     }
-    
-    if (position.line === range.end.line && position.character > range.end.character) {
+
+    if (
+      position.line === range.end.line &&
+      position.character > range.end.character
+    ) {
       return false;
     }
-    
+
     return true;
   }
 
@@ -151,7 +168,7 @@ export class CompletionProvider {
    */
   private buildDocumentation(term: any): string {
     let doc = `**${term.term}**\n\n`;
-    
+
     // Add codes
     doc += '**Codes:**\n';
     term.codes.forEach((code: any) => {
@@ -169,7 +186,10 @@ export class CompletionProvider {
   /**
    * Get snippet completions for common medical patterns
    */
-  private getSnippetCompletions(context: string | undefined, partialWord: string): CompletionItem[] {
+  private getSnippetCompletions(
+    context: string | undefined,
+    partialWord: string
+  ): CompletionItem[] {
     const snippets: CompletionItem[] = [];
 
     if (context === 'medications' && partialWord.length >= 2) {
@@ -177,8 +197,9 @@ export class CompletionProvider {
         label: 'medication template',
         kind: CompletionItemKind.Snippet,
         detail: 'Standard medication format',
-        insertText: '${1:medication name} ${2:dose} ${3:frequency}\n    status: ${4:active}\n    instructions: ${5:take with food}',
-        documentation: 'Insert a structured medication entry'
+        insertText:
+          '${1:medication name} ${2:dose} ${3:frequency}\n    status: ${4:active}\n    instructions: ${5:take with food}',
+        documentation: 'Insert a structured medication entry',
       });
     }
 
@@ -187,8 +208,9 @@ export class CompletionProvider {
         label: 'assessment template',
         kind: CompletionItemKind.Snippet,
         detail: 'Standard assessment format',
-        insertText: '${1:condition} - ${2:assessment}\n   - ${3:plan item 1}\n   - ${4:plan item 2}',
-        documentation: 'Insert a structured assessment and plan entry'
+        insertText:
+          '${1:condition} - ${2:assessment}\n   - ${3:plan item 1}\n   - ${4:plan item 2}',
+        documentation: 'Insert a structured assessment and plan entry',
       });
     }
 

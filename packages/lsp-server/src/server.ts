@@ -1,6 +1,6 @@
 /**
  * yAbelFish LSP Server
- * 
+ *
  * Main Language Server Protocol implementation for yAbel medical documentation format.
  * This is the universal LSP server that can run in multiple environments:
  * - Browser Web Worker
@@ -19,7 +19,7 @@ import {
   TextDocumentPositionParams,
   TextDocumentSyncKind,
   InitializeResult,
-  ServerCapabilities
+  ServerCapabilities,
 } from 'vscode-languageserver/node';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
@@ -68,22 +68,22 @@ connection.onInitialize((params: InitializeParams) => {
       // Tell the client that this server supports code completion.
       completionProvider: {
         resolveProvider: true,
-        triggerCharacters: [' ', '.', '-']
+        triggerCharacters: [' ', '.', '-'],
       },
       // Support hover information
       hoverProvider: true,
       // Support code actions
       codeActionProvider: true,
       // Support inlay hints
-      inlayHintProvider: true
-    }
+      inlayHintProvider: true,
+    },
   };
 
   if (hasWorkspaceFolderCapability) {
     result.capabilities.workspace = {
       workspaceFolders: {
-        supported: true
-      }
+        supported: true,
+      },
     };
   }
 
@@ -93,7 +93,10 @@ connection.onInitialize((params: InitializeParams) => {
 connection.onInitialized(() => {
   if (hasConfigurationCapability) {
     // Register for all configuration changes.
-    connection.client.register(DidChangeConfigurationNotification.type, undefined);
+    connection.client.register(
+      DidChangeConfigurationNotification.type,
+      undefined
+    );
   }
   if (hasWorkspaceFolderCapability) {
     connection.workspace.onDidChangeWorkspaceFolders(_event => {
@@ -120,14 +123,14 @@ function getDocumentSettings(resource: string): Thenable<any> {
     return Promise.resolve({
       enableDiagnostics: true,
       enableCompletions: true,
-      enableHover: true
+      enableHover: true,
     });
   }
   let result = documentSettings.get(resource);
   if (!result) {
     result = connection.workspace.getConfiguration({
       scopeUri: resource,
-      section: 'yabelfish'
+      section: 'yabelfish',
     });
     documentSettings.set(resource, result);
   }
@@ -148,7 +151,7 @@ documents.onDidChangeContent(change => {
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
   // Get document settings
   const settings = await getDocumentSettings(textDocument.uri);
-  
+
   if (!settings.enableDiagnostics) {
     return;
   }
@@ -162,18 +165,25 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
 // This handler provides the initial list of the completion items.
 connection.onCompletion(
-  async (_textDocumentPosition: TextDocumentPositionParams): Promise<CompletionItem[]> => {
+  async (
+    _textDocumentPosition: TextDocumentPositionParams
+  ): Promise<CompletionItem[]> => {
     const document = documents.get(_textDocumentPosition.textDocument.uri);
     if (!document) {
       return [];
     }
 
-    const settings = await getDocumentSettings(_textDocumentPosition.textDocument.uri);
+    const settings = await getDocumentSettings(
+      _textDocumentPosition.textDocument.uri
+    );
     if (!settings.enableCompletions) {
       return [];
     }
 
-    return completionProvider.provideCompletions(document, _textDocumentPosition.position);
+    return completionProvider.provideCompletions(
+      document,
+      _textDocumentPosition.position
+    );
   }
 );
 
@@ -198,15 +208,15 @@ connection.onHover(async (params: TextDocumentPositionParams) => {
 
   const text = document.getText();
   const offset = document.offsetAt(params.position);
-  
+
   // Find medical terms at this position
   const matches = terminology.findTermsInText(text);
-  
+
   for (const match of matches) {
     if (offset >= match.start && offset <= match.end) {
       const term = match.term;
       const primaryCode = term.codes[0];
-      
+
       return {
         contents: {
           kind: 'markdown',
@@ -216,15 +226,17 @@ connection.onHover(async (params: TextDocumentPositionParams) => {
             `**Primary Code:** ${primaryCode.code} (${primaryCode.type.toUpperCase()})`,
             `**Description:** ${primaryCode.description}`,
             '',
-            term.aliases && term.aliases.length > 0 
+            term.aliases && term.aliases.length > 0
               ? `**Also known as:** ${term.aliases.join(', ')}`
-              : ''
-          ].filter(Boolean).join('\n')
+              : '',
+          ]
+            .filter(Boolean)
+            .join('\n'),
         },
         range: {
           start: document.positionAt(match.start),
-          end: document.positionAt(match.end)
-        }
+          end: document.positionAt(match.end),
+        },
       };
     }
   }
@@ -233,7 +245,7 @@ connection.onHover(async (params: TextDocumentPositionParams) => {
 });
 
 // Handle code actions (e.g., "Add ICD-10 code")
-connection.onCodeAction(async (params) => {
+connection.onCodeAction(async params => {
   const document = documents.get(params.textDocument.uri);
   if (!document) {
     return [];
@@ -244,26 +256,7 @@ connection.onCodeAction(async (params) => {
   return [];
 });
 
-// Handle inlay hints (show codes inline)
-connection.onInlayHint(async (params) => {
-  const document = documents.get(params.textDocument.uri);
-  if (!document) {
-    return [];
-  }
-
-  const text = document.getText();
-  const matches = terminology.findTermsInText(text);
-  
-  return matches.map(match => {
-    const primaryCode = match.term.codes[0];
-    return {
-      position: document.positionAt(match.end),
-      label: ` ${primaryCode.code}`,
-      kind: 1, // Type inlay hint
-      tooltip: `${primaryCode.type.toUpperCase()}: ${primaryCode.description}`
-    };
-  });
-});
+// Note: Inlay hints would require additional LSP capabilities configuration
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events
@@ -279,5 +272,5 @@ export {
   terminology,
   parser,
   completionProvider,
-  diagnosticsProvider
+  diagnosticsProvider,
 };

@@ -1,12 +1,18 @@
 /**
  * yAbel Format Parser
- * 
+ *
  * Parses yAbel format which is inspired by Markdown and YAML but forgiving.
  * Extracts structured information from medical documentation.
  */
 
 export interface ParsedSection {
-  type: 'heading' | 'text' | 'medication' | 'allergy' | 'condition' | 'structured';
+  type:
+    | 'heading'
+    | 'text'
+    | 'medication'
+    | 'allergy'
+    | 'condition'
+    | 'structured';
   level?: number;
   title?: string;
   content: string;
@@ -69,9 +75,9 @@ export class YAbelParser {
       const level = headingMatch[1].length;
       const title = headingMatch[2].trim();
       const startChar = this.lines[this.currentLine].indexOf('#');
-      
+
       this.currentLine++;
-      
+
       // Collect content until next heading or end
       const contentLines: string[] = [];
       while (this.currentLine < this.lines.length) {
@@ -94,9 +100,9 @@ export class YAbelParser {
         content,
         range: {
           start: { line: startLine, character: startChar },
-          end: { line: endLine, character: endChar }
+          end: { line: endLine, character: endChar },
         },
-        metadata: this.extractMetadata(title, content)
+        metadata: this.extractMetadata(title, content),
       };
     }
 
@@ -127,8 +133,11 @@ export class YAbelParser {
       content,
       range: {
         start: { line: startLine, character: 0 },
-        end: { line: this.currentLine - 1, character: this.lines[this.currentLine - 1]?.length || 0 }
-      }
+        end: {
+          line: this.currentLine - 1,
+          character: this.lines[this.currentLine - 1]?.length || 0,
+        },
+      },
     };
   }
 
@@ -169,9 +178,9 @@ export class YAbelParser {
       content,
       range: {
         start: { line: startLine, character: 0 },
-        end: { line: endLine, character: this.lines[endLine]?.length || 0 }
+        end: { line: endLine, character: this.lines[endLine]?.length || 0 },
       },
-      metadata: { structuredData }
+      metadata: { structuredData },
     };
   }
 
@@ -183,16 +192,26 @@ export class YAbelParser {
 
     // Classify section type based on title
     const titleLower = title.toLowerCase();
-    
+
     if (titleLower.includes('medication') || titleLower.includes('med')) {
       metadata.sectionType = 'medications';
     } else if (titleLower.includes('allerg')) {
       metadata.sectionType = 'allergies';
-    } else if (titleLower.includes('chief') || titleLower.includes('complaint')) {
+    } else if (
+      titleLower.includes('chief') ||
+      titleLower.includes('complaint')
+    ) {
       metadata.sectionType = 'chief-complaint';
-    } else if (titleLower.includes('hpi') || titleLower.includes('history') || titleLower.includes('illness')) {
+    } else if (
+      titleLower.includes('hpi') ||
+      titleLower.includes('history') ||
+      titleLower.includes('illness')
+    ) {
       metadata.sectionType = 'hpi';
-    } else if (titleLower.includes('assessment') || titleLower.includes('plan')) {
+    } else if (
+      titleLower.includes('assessment') ||
+      titleLower.includes('plan')
+    ) {
       metadata.sectionType = 'assessment-plan';
     } else if (titleLower.includes('patient')) {
       metadata.sectionType = 'patient-info';
@@ -201,7 +220,7 @@ export class YAbelParser {
     // Extract visit information if present
     const visitMatch = content.match(/Visit\s+Enc\s*#:\s*(\d+)/i);
     const dateMatch = content.match(/Date:\s*([\d-]+)/i);
-    
+
     if (visitMatch) {
       metadata.visitNumber = visitMatch[1];
     }
@@ -215,10 +234,15 @@ export class YAbelParser {
   /**
    * Get section by type
    */
-  static getSectionByType(document: ParsedDocument, sectionType: string): ParsedSection | null {
-    return document.sections.find(section => 
-      section.metadata?.sectionType === sectionType
-    ) || null;
+  static getSectionByType(
+    document: ParsedDocument,
+    sectionType: string
+  ): ParsedSection | null {
+    return (
+      document.sections.find(
+        section => section.metadata?.sectionType === sectionType
+      ) || null
+    );
   }
 
   /**
@@ -231,13 +255,17 @@ export class YAbelParser {
   /**
    * Extract text range
    */
-  static getTextAtPosition(content: string, line: number, character: number): string {
+  static getTextAtPosition(
+    content: string,
+    line: number,
+    character: number
+  ): string {
     const lines = content.split('\n');
     if (line >= lines.length) return '';
-    
+
     const targetLine = lines[line];
     if (character >= targetLine.length) return '';
-    
+
     return targetLine;
   }
 }

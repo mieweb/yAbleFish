@@ -1,6 +1,6 @@
 /**
  * yAbelFish Browser Client - Main Application
- * 
+ *
  * Enhanced version of the proof of concept with proper Phase 1 & 2 implementation.
  * Features Monaco Editor with tabbed interface for medical visit sections.
  */
@@ -8,7 +8,14 @@
 import * as monaco from 'monaco-editor';
 
 // Define section types for medical visit
-type Section = 'patient' | 'chief' | 'hpi' | 'allergies' | 'meds' | 'assessment' | 'plan';
+type Section =
+  | 'patient'
+  | 'chief'
+  | 'hpi'
+  | 'allergies'
+  | 'meds'
+  | 'assessment'
+  | 'plan';
 
 interface ExtractedCode {
   term: string;
@@ -28,7 +35,7 @@ class YAbelFishEditor {
   private currentSection: Section = 'patient';
   private worker: Worker | null = null;
   private port: MessagePort | null = null;
-  private sectionRanges: Partial<Record<Section, { start: number; end: number }>> = {};
+  private sectionRanges = new Map<Section, { start: number; end: number }>();
 
   // Single document content with all sections
   private documentContent = `# Visit Enc #: 139 Date: 09-22-2025 RE: Heart, William 02-14-1964
@@ -98,7 +105,7 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
         'editor.selectionBackground': '#264f78',
         'editorCursor.foreground': '#ffffff',
         'editor.inactiveSelectionBackground': '#3a3d41',
-      }
+      },
     });
 
     monaco.editor.setTheme('yabel-dark');
@@ -106,12 +113,8 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
 
   private createModel() {
     const uri = monaco.Uri.parse('yabel://visit/encounter-123');
-    this.model = monaco.editor.createModel(
-      this.documentContent,
-      'yabel',
-      uri
-    );
-    
+    this.model = monaco.editor.createModel(this.documentContent, 'yabel', uri);
+
     // Calculate section ranges for scroll navigation
     this.calculateSectionRanges();
   }
@@ -143,11 +146,11 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
       quickSuggestions: {
         other: true,
         comments: false,
-        strings: false
+        strings: false,
       },
       suggestOnTriggerCharacters: true,
       acceptSuggestionOnEnter: 'on',
-      tabCompletion: 'on'
+      tabCompletion: 'on',
     });
 
     // Handle window resize
@@ -165,12 +168,12 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
 
   private setupTabs() {
     const tabs = document.querySelectorAll('.tab');
-    
+
     tabs.forEach(tab => {
-      tab.addEventListener('click', (e) => {
+      tab.addEventListener('click', e => {
         const target = e.target as HTMLElement;
         const section = target.dataset.section as Section;
-        
+
         if (section) {
           this.switchToSection(section);
         }
@@ -186,9 +189,11 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
     document.querySelectorAll('.tab').forEach(tab => {
       tab.classList.remove('active');
     });
-    
-    document.querySelector(`[data-section="${section}"]`)?.classList.add('active');
-    
+
+    document
+      .querySelector(`[data-section="${section}"]`)
+      ?.classList.add('active');
+
     // Update current section and scroll to it
     this.currentSection = section;
     this.scrollToSection(section);
@@ -212,7 +217,7 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
       this.port = channel.port1;
 
       // Listen for metadata updates from worker
-      this.port.onmessage = (event) => {
+      this.port.onmessage = event => {
         this.handleWorkerMessage(event.data);
       };
 
@@ -223,7 +228,6 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
       this.sendDocumentChange(this.model.uri.toString(), this.model.getValue());
 
       console.log('LSP worker started successfully');
-
     } catch (error) {
       console.error('Failed to initialize LSP:', error);
     }
@@ -251,7 +255,7 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
       this.port.postMessage({
         type: 'document-changed',
         uri,
-        text
+        text,
       });
     }
   }
@@ -270,7 +274,7 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
 
   private handleDiagnostics(data: { uri: string; diagnostics: any[] }) {
     this.diagnostics.set(data.uri, data.diagnostics);
-    
+
     // Update metadata panel (always update since we have single model)
     const currentUri = this.model.uri.toString();
     if (data.uri === currentUri) {
@@ -287,14 +291,19 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
     const codesList = document.getElementById('codes-list');
     if (codesList) {
       if (codes.length === 0) {
-        codesList.innerHTML = '<div class="empty-state">No medical codes detected yet</div>';
+        codesList.innerHTML =
+          '<div class="empty-state">No medical codes detected yet</div>';
       } else {
-        codesList.innerHTML = codes.map(code => `
+        codesList.innerHTML = codes
+          .map(
+            code => `
           <div class="code-item">
             <div class="code-term">${code.term}</div>
             <div class="code-id">${code.code}</div>
           </div>
-        `).join('');
+        `
+          )
+          .join('');
       }
     }
 
@@ -302,9 +311,12 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
     const diagnosticsList = document.getElementById('diagnostics-list');
     if (diagnosticsList) {
       if (diagnostics.length === 0) {
-        diagnosticsList.innerHTML = '<div class="empty-state">No issues detected</div>';
+        diagnosticsList.innerHTML =
+          '<div class="empty-state">No issues detected</div>';
       } else {
-        diagnosticsList.innerHTML = diagnostics.map(diag => `
+        diagnosticsList.innerHTML = diagnostics
+          .map(
+            diag => `
           <div class="diagnostic-item ${diag.severity === 1 ? 'error' : 'warning'}">
             <div class="diagnostic-icon">${diag.severity === 1 ? '🚨' : '⚠️'}</div>
             <div class="diagnostic-content">
@@ -312,7 +324,9 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
               <div class="diagnostic-code">${diag.code || 'VALIDATION'}</div>
             </div>
           </div>
-        `).join('');
+        `
+          )
+          .join('');
       }
     }
 
@@ -327,7 +341,7 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
     const currentUri = this.model.uri.toString();
     const codes = this.extractedCodes.get(currentUri) || [];
     const diagnostics = this.diagnostics.get(currentUri) || [];
-    
+
     const codesCount = codes.length;
     const warningsCount = diagnostics.filter(d => d.severity === 2).length;
     const errorsCount = diagnostics.filter(d => d.severity === 1).length;
@@ -351,15 +365,17 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
   private setupMetadataPanel() {
     // Initialize metadata panel
     this.updateMetadataPanel();
-    
+
     // Add metadata panel toggle functionality
     const toggleButton = document.getElementById('metadata-toggle');
     const metadataPanel = document.getElementById('metadata-panel');
-    
+
     if (toggleButton && metadataPanel) {
       toggleButton.addEventListener('click', () => {
         metadataPanel.classList.toggle('collapsed');
-        toggleButton.textContent = metadataPanel.classList.contains('collapsed') ? '◀' : '▶';
+        toggleButton.textContent = metadataPanel.classList.contains('collapsed')
+          ? '◀'
+          : '▶';
       });
     }
   }
@@ -370,39 +386,39 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
   private calculateSectionRanges() {
     const content = this.model.getValue();
     const lines = content.split('\n');
-    
+
     // Section mappings from heading text to section type
     const sectionMappings: Record<string, Section> = {
-      'patient': 'patient',
+      patient: 'patient',
       'chief complaint': 'chief',
-      'hpi': 'hpi',
+      hpi: 'hpi',
       'history of present illness': 'hpi',
-      'allergies': 'allergies',
+      allergies: 'allergies',
       'allergies and intolerances': 'allergies',
-      'medications': 'meds',
-      'assessment': 'assessment',
-      'plan': 'plan'
+      medications: 'meds',
+      assessment: 'assessment',
+      plan: 'plan',
     };
 
     // Reset ranges
-    this.sectionRanges = {};
-    
+    this.sectionRanges.clear();
+
     let currentSection: Section | null = null;
     let sectionStart = 0;
 
     lines.forEach((line, index) => {
       const trimmed = line.trim().toLowerCase();
-      
+
       // Check if this line is a heading (starts with ##)
       if (trimmed.startsWith('##')) {
         // If we had a previous section, close it
         if (currentSection) {
-          this.sectionRanges[currentSection] = {
+          this.sectionRanges.set(currentSection, {
             start: sectionStart,
-            end: index - 1
-          };
+            end: index - 1,
+          });
         }
-        
+
         // Find matching section
         const headingText = trimmed.replace(/^#+\s*/, '');
         for (const [key, section] of Object.entries(sectionMappings)) {
@@ -417,10 +433,10 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
 
     // Close the last section
     if (currentSection) {
-      this.sectionRanges[currentSection] = {
+      this.sectionRanges.set(currentSection, {
         start: sectionStart,
-        end: lines.length - 1
-      };
+        end: lines.length - 1,
+      });
     }
   }
 
@@ -428,7 +444,7 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
    * Scroll editor to the specified section
    */
   private scrollToSection(section: Section) {
-    const range = this.sectionRanges[section];
+    const range = this.sectionRanges.get(section);
     if (!range) {
       console.warn(`No range found for section: ${section}`);
       return;
@@ -436,7 +452,7 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
 
     // Scroll to the section heading
     this.editor.revealLineInCenter(range.start + 1); // Monaco uses 1-based line numbers
-    
+
     // Optionally set cursor to the beginning of the section content
     const position = { lineNumber: range.start + 2, column: 1 }; // Skip heading line
     this.editor.setPosition(position);
@@ -455,17 +471,18 @@ Patient presents with complaints of chest pain and shortness of breath. Symptoms
         allergies: 'Allergies & Intolerances',
         meds: 'Medications',
         assessment: 'Assessment',
-        plan: 'Plan'
+        plan: 'Plan',
       };
-      
-      sectionTitleElement.textContent = sectionNames[section] || 'Medical Documentation';
+
+      sectionTitleElement.textContent =
+        sectionNames[section] || 'Medical Documentation';
     }
   }
 
   public dispose() {
     this.editor?.dispose();
     this.worker?.terminate();
-    
+
     this.model?.dispose();
   }
 }
@@ -479,7 +496,7 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('yAbelFish Editor initialized successfully');
   } catch (error) {
     console.error('Failed to initialize yAbelFish Editor:', error);
-    
+
     // Show error message to user
     const editorContainer = document.getElementById('editor');
     if (editorContainer) {

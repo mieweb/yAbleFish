@@ -1,6 +1,6 @@
 /**
  * Medical Terminology Database - Browser Version
- * 
+ *
  * Simplified version for browser client without Node.js dependencies
  */
 
@@ -33,100 +33,160 @@ export class MedicalTerminology {
       {
         term: 'hypertension',
         codes: [
-          { code: 'I10', description: 'Essential hypertension', type: 'icd10', category: 'cardiovascular' }
+          {
+            code: 'I10',
+            description: 'Essential hypertension',
+            type: 'icd10',
+            category: 'cardiovascular',
+          },
         ],
         aliases: ['high blood pressure', 'htn'],
-        contextHints: ['assessment', 'plan']
+        contextHints: ['assessment', 'plan'],
       },
       {
         term: 'congestive heart failure',
         codes: [
-          { code: 'I50.9', description: 'Heart failure, unspecified', type: 'icd10', category: 'cardiovascular' }
+          {
+            code: 'I50.9',
+            description: 'Heart failure, unspecified',
+            type: 'icd10',
+            category: 'cardiovascular',
+          },
         ],
         aliases: ['chf', 'heart failure'],
-        contextHints: ['assessment', 'plan']
+        contextHints: ['assessment', 'plan'],
       },
       {
         term: 'atrial fibrillation',
         codes: [
-          { code: 'I48.91', description: 'Unspecified atrial fibrillation', type: 'icd10', category: 'cardiovascular' }
+          {
+            code: 'I48.91',
+            description: 'Unspecified atrial fibrillation',
+            type: 'icd10',
+            category: 'cardiovascular',
+          },
         ],
         aliases: ['afib', 'a-fib'],
-        contextHints: ['assessment', 'plan']
+        contextHints: ['assessment', 'plan'],
       },
       {
         term: 'chest pain',
         codes: [
-          { code: 'R07.9', description: 'Chest pain, unspecified', type: 'icd10', category: 'symptoms' }
+          {
+            code: 'R07.9',
+            description: 'Chest pain, unspecified',
+            type: 'icd10',
+            category: 'symptoms',
+          },
         ],
         aliases: ['thoracic pain'],
-        contextHints: ['chief', 'hpi']
+        contextHints: ['chief', 'hpi'],
       },
       {
         term: 'shortness of breath',
         codes: [
-          { code: 'R06.02', description: 'Shortness of breath', type: 'icd10', category: 'symptoms' }
+          {
+            code: 'R06.02',
+            description: 'Shortness of breath',
+            type: 'icd10',
+            category: 'symptoms',
+          },
         ],
         aliases: ['dyspnea', 'sob', 'breathlessness'],
-        contextHints: ['chief', 'hpi']
+        contextHints: ['chief', 'hpi'],
       },
       // Medications (RxNorm)
       {
         term: 'aspirin 81 mg',
         codes: [
-          { code: '243670', description: 'aspirin 81 MG Enteric Coated Tablet', type: 'rxnorm', category: 'medication' }
+          {
+            code: '243670',
+            description: 'aspirin 81 MG Enteric Coated Tablet',
+            type: 'rxnorm',
+            category: 'medication',
+          },
         ],
         aliases: ['baby aspirin', 'low dose aspirin'],
-        contextHints: ['meds', 'plan']
+        contextHints: ['meds', 'plan'],
       },
       {
         term: 'lisinopril 10 mg',
         codes: [
-          { code: '314076', description: 'lisinopril 10 MG Oral Tablet', type: 'rxnorm', category: 'medication' }
+          {
+            code: '314076',
+            description: 'lisinopril 10 MG Oral Tablet',
+            type: 'rxnorm',
+            category: 'medication',
+          },
         ],
-        contextHints: ['meds', 'plan']
+        contextHints: ['meds', 'plan'],
       },
       {
         term: 'warfarin 5 mg',
         codes: [
-          { code: '855332', description: 'warfarin sodium 5 MG Oral Tablet', type: 'rxnorm', category: 'medication' }
+          {
+            code: '855332',
+            description: 'warfarin sodium 5 MG Oral Tablet',
+            type: 'rxnorm',
+            category: 'medication',
+          },
         ],
         aliases: ['coumadin 5 mg'],
-        contextHints: ['meds', 'plan']
+        contextHints: ['meds', 'plan'],
       },
       {
         term: 'furosemide 20 mg',
         codes: [
-          { code: '310429', description: 'furosemide 20 MG Oral Tablet', type: 'rxnorm', category: 'medication' }
+          {
+            code: '310429',
+            description: 'furosemide 20 MG Oral Tablet',
+            type: 'rxnorm',
+            category: 'medication',
+          },
         ],
         aliases: ['lasix 20 mg'],
-        contextHints: ['meds', 'plan']
+        contextHints: ['meds', 'plan'],
       },
       // Allergies
       {
         term: 'penicillin',
         codes: [
-          { code: 'Z88.0', description: 'Allergy status to penicillin', type: 'icd10', category: 'allergy' }
+          {
+            code: 'Z88.0',
+            description: 'Allergy status to penicillin',
+            type: 'icd10',
+            category: 'allergy',
+          },
         ],
         aliases: ['pcn'],
-        contextHints: ['allergies']
+        contextHints: ['allergies'],
       },
       {
         term: 'sulfonamides',
         codes: [
-          { code: 'Z88.2', description: 'Allergy status to sulfonamides', type: 'icd10', category: 'allergy' }
+          {
+            code: 'Z88.2',
+            description: 'Allergy status to sulfonamides',
+            type: 'icd10',
+            category: 'allergy',
+          },
         ],
         aliases: ['sulfa'],
-        contextHints: ['allergies']
+        contextHints: ['allergies'],
       },
       // Additional common medications that might conflict
       {
         term: 'amoxicillin',
         codes: [
-          { code: '308191', description: 'amoxicillin 500 MG Oral Capsule', type: 'rxnorm', category: 'medication' }
+          {
+            code: '308191',
+            description: 'amoxicillin 500 MG Oral Capsule',
+            type: 'rxnorm',
+            category: 'medication',
+          },
         ],
-        contextHints: ['meds', 'plan']
-      }
+        contextHints: ['meds', 'plan'],
+      },
     ];
 
     // Index all terms
@@ -148,7 +208,8 @@ export class MedicalTerminology {
   }
 
   private normalizeTerm(term: string): string {
-    return term.toLowerCase()
+    return term
+      .toLowerCase()
       .replace(/[^\w\s]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
@@ -171,28 +232,34 @@ export class MedicalTerminology {
 
     // Check all indexed terms
     for (const [normalizedTerm, term] of this.terms.entries()) {
-      const regex = new RegExp(`\\b${this.escapeRegex(normalizedTerm)}\\b`, 'gi');
+      const regex = new RegExp(
+        `\\b${this.escapeRegex(normalizedTerm)}\\b`,
+        'gi'
+      );
       let match;
       while ((match = regex.exec(normalizedText)) !== null) {
         matches.push({
           term,
           match: text.substring(match.index, match.index + match[0].length),
           start: match.index,
-          end: match.index + match[0].length
+          end: match.index + match[0].length,
         });
       }
     }
 
     // Check aliases
     for (const [normalizedAlias, term] of this.aliasIndex.entries()) {
-      const regex = new RegExp(`\\b${this.escapeRegex(normalizedAlias)}\\b`, 'gi');
+      const regex = new RegExp(
+        `\\b${this.escapeRegex(normalizedAlias)}\\b`,
+        'gi'
+      );
       let match;
       while ((match = regex.exec(normalizedText)) !== null) {
         matches.push({
           term,
           match: text.substring(match.index, match.index + match[0].length),
           start: match.index,
-          end: match.index + match[0].length
+          end: match.index + match[0].length,
         });
       }
     }
@@ -205,7 +272,10 @@ export class MedicalTerminology {
     return this.terms.get(normalized) || this.aliasIndex.get(normalized);
   }
 
-  getCompletions(partial: string, context?: string): Array<{
+  getCompletions(
+    partial: string,
+    context?: string
+  ): Array<{
     term: MedicalTerm;
     relevance: number;
   }> {
@@ -215,7 +285,12 @@ export class MedicalTerminology {
     // Check main terms
     for (const [normalizedTerm, term] of this.terms.entries()) {
       if (normalizedTerm.includes(normalizedPartial)) {
-        let relevance = this.calculateRelevance(normalizedTerm, normalizedPartial, context, term);
+        const relevance = this.calculateRelevance(
+          normalizedTerm,
+          normalizedPartial,
+          context,
+          term
+        );
         completions.push({ term, relevance });
       }
     }
@@ -223,17 +298,25 @@ export class MedicalTerminology {
     // Check aliases
     for (const [normalizedAlias, term] of this.aliasIndex.entries()) {
       if (normalizedAlias.includes(normalizedPartial)) {
-        let relevance = this.calculateRelevance(normalizedAlias, normalizedPartial, context, term);
+        const relevance = this.calculateRelevance(
+          normalizedAlias,
+          normalizedPartial,
+          context,
+          term
+        );
         completions.push({ term, relevance });
       }
     }
 
-    return completions
-      .sort((a, b) => b.relevance - a.relevance)
-      .slice(0, 20);
+    return completions.sort((a, b) => b.relevance - a.relevance).slice(0, 20);
   }
 
-  private calculateRelevance(termName: string, partial: string, context: string | undefined, term: MedicalTerm): number {
+  private calculateRelevance(
+    termName: string,
+    partial: string,
+    context: string | undefined,
+    term: MedicalTerm
+  ): number {
     let score = 0;
 
     if (termName.startsWith(partial)) {
@@ -253,30 +336,34 @@ export class MedicalTerminology {
     return score;
   }
 
-  validateCode(code: string): { valid: boolean; term?: MedicalTerm; message?: string } {
+  validateCode(code: string): {
+    valid: boolean;
+    term?: MedicalTerm;
+    message?: string;
+  } {
     const term = this.codeIndex.get(code);
-    
+
     if (term) {
       return { valid: true, term };
     }
 
     if (/^[A-Z]\d{2}(\.\d+)?$/.test(code)) {
-      return { 
-        valid: false, 
-        message: `ICD-10 code ${code} not found in terminology database` 
+      return {
+        valid: false,
+        message: `ICD-10 code ${code} not found in terminology database`,
       };
     }
 
     if (/^\d+$/.test(code)) {
-      return { 
-        valid: false, 
-        message: `RxNorm code ${code} not found in terminology database` 
+      return {
+        valid: false,
+        message: `RxNorm code ${code} not found in terminology database`,
       };
     }
 
-    return { 
-      valid: false, 
-      message: `Invalid code format: ${code}` 
+    return {
+      valid: false,
+      message: `Invalid code format: ${code}`,
     };
   }
 

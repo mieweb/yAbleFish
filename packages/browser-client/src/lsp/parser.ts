@@ -1,6 +1,6 @@
 /**
  * yAbel Parser - Browser Version
- * 
+ *
  * Simplified version for browser client
  */
 
@@ -58,9 +58,9 @@ export class YAbelParser {
       const level = headingMatch[1].length;
       const title = headingMatch[2].trim();
       const startChar = this.lines[this.currentLine].indexOf('#');
-      
+
       this.currentLine++;
-      
+
       const contentLines: string[] = [];
       while (this.currentLine < this.lines.length) {
         const nextLine = this.lines[this.currentLine];
@@ -82,9 +82,9 @@ export class YAbelParser {
         content,
         range: {
           start: { line: startLine, character: startChar },
-          end: { line: endLine, character: endChar }
+          end: { line: endLine, character: endChar },
         },
-        metadata: this.extractMetadata(title, content)
+        metadata: this.extractMetadata(title, content),
       };
     }
 
@@ -109,8 +109,11 @@ export class YAbelParser {
       content,
       range: {
         start: { line: startLine, character: 0 },
-        end: { line: this.currentLine - 1, character: this.lines[this.currentLine - 1]?.length || 0 }
-      }
+        end: {
+          line: this.currentLine - 1,
+          character: this.lines[this.currentLine - 1]?.length || 0,
+        },
+      },
     };
   }
 
@@ -118,16 +121,22 @@ export class YAbelParser {
     const metadata: Record<string, any> = {};
 
     const titleLower = title.toLowerCase();
-    
+
     if (titleLower.includes('medication') || titleLower.includes('med')) {
       metadata.sectionType = 'medications';
     } else if (titleLower.includes('allerg')) {
       metadata.sectionType = 'allergies';
-    } else if (titleLower.includes('chief') || titleLower.includes('complaint')) {
+    } else if (
+      titleLower.includes('chief') ||
+      titleLower.includes('complaint')
+    ) {
       metadata.sectionType = 'chief-complaint';
     } else if (titleLower.includes('hpi') || titleLower.includes('history')) {
       metadata.sectionType = 'hpi';
-    } else if (titleLower.includes('assessment') || titleLower.includes('plan')) {
+    } else if (
+      titleLower.includes('assessment') ||
+      titleLower.includes('plan')
+    ) {
       metadata.sectionType = 'assessment-plan';
     } else if (titleLower.includes('patient')) {
       metadata.sectionType = 'patient-info';
@@ -136,9 +145,14 @@ export class YAbelParser {
     return metadata;
   }
 
-  static getSectionByType(document: ParsedDocument, sectionType: string): ParsedSection | null {
-    return document.sections.find(section => 
-      section.metadata?.sectionType === sectionType
-    ) || null;
+  static getSectionByType(
+    document: ParsedDocument,
+    sectionType: string
+  ): ParsedSection | null {
+    return (
+      document.sections.find(
+        section => section.metadata?.sectionType === sectionType
+      ) || null
+    );
   }
 }
