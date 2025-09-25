@@ -14,10 +14,10 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
-    "declaration": true,
+  "declaration": true,
   "composite": true,
   "rootDir": "src",
-    "outDir": "./dist"
+  "outDir": "./dist"
   },
   "include": [
     "src/**/*"

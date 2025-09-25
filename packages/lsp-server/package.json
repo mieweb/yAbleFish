@@ -5,8 +5,8 @@
   "main": "dist/server.js",
   "types": "dist/server.d.ts",
   "scripts": {
-    "prebuild": "npm run build --workspace=@yabelfish/medical-terminology",
-    "build": "tsc",
+  "prebuild": "npm run build --workspace=@yabelfish/medical-terminology",
+  "build": "tsc -b --clean && tsc -b",
     "dev": "tsc --watch",
     "clean": "rm -rf dist",
     "lint": "cd ../.. && eslint packages/lsp-server/src --ext .ts --report-unused-disable-directives --max-warnings 0",
