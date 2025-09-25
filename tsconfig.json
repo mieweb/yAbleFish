@@ -22,7 +22,7 @@
     "incremental": true
   },
   "references": [
-    { "path": "./packages/lsp-server" },
-    { "path": "./packages/browser-client" }
+    { "path": "./packages/medical-terminology" },
+    { "path": "./packages/lsp-server" }
   ]
 }
