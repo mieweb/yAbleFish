@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "prod": "vite --port 3000 --host yablefish.opensource.mieweb.org",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "cd ../.. && eslint packages/browser-client/src --ext .ts,.tsx --report-unused-disable-directives --max-warnings 0",
