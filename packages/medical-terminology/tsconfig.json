@@ -16,6 +16,7 @@
     "forceConsistentCasingInFileNames": true,
     "declaration": true,
   "composite": true,
+  "rootDir": "src",
     "outDir": "./dist"
   },
   "include": [

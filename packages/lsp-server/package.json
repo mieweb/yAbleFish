@@ -5,6 +5,7 @@
   "main": "dist/server.js",
   "types": "dist/server.d.ts",
   "scripts": {
+    "prebuild": "npm run build --workspace=@yabelfish/medical-terminology",
     "build": "tsc",
     "dev": "tsc --watch",
     "clean": "rm -rf dist",
