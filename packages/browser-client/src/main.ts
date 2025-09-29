@@ -199,7 +199,13 @@ Patient returns for routine diabetes follow-up. Reports good adherence to medica
       // TODO: Send document changes to real LSP server
       // Recalculate section ranges when content changes
       this.calculateSectionRanges();
+      
+      // Validate document and show errors
+      this.validateDocumentAndShowErrors();
     });
+    
+    // Initial validation
+    this.validateDocumentAndShowErrors();
   }
 
 
@@ -217,7 +223,57 @@ Patient returns for routine diabetes follow-up. Reports good adherence to medica
         processId: null,
         clientInfo: { name: 'yAbelFish Browser Client', version: '0.1.0' },
         rootUri: null,
-        capabilities: {}
+        capabilities: {
+          textDocument: {
+            synchronization: {
+              didOpen: true,
+              didChange: true,
+              didClose: true
+            }
+          }
+        }
+      });
+
+      // Send initialized notification
+      lspClient.sendNotification('initialized', {});
+
+      // Open the current document with LSP server
+      const uri = this.model.uri.toString();
+      lspClient.sendNotification('textDocument/didOpen', {
+        textDocument: {
+          uri: uri,
+          languageId: 'yabel',
+          version: 1,
+          text: this.model.getValue()
+        }
+      });
+
+      // Listen for content changes and notify LSP server
+      this.model.onDidChangeContent(() => {
+        lspClient.sendNotification('textDocument/didChange', {
+          textDocument: {
+            uri: uri,
+            version: Date.now() // Simple versioning
+          },
+          contentChanges: [
+            {
+              text: this.model.getValue() // Send full text for simplicity
+            }
+          ]
+        });
+      });
+
+      // Store LSP client reference for later use
+      (this as any).lspClient = lspClient;
+
+      // Listen for LSP diagnostics events
+      window.addEventListener('yabelfish-diagnostics', (event: any) => {
+        const { uri, diagnostics } = event.detail;
+        if (uri === this.model.uri.toString()) {
+          // Update our diagnostics storage with LSP diagnostics
+          this.diagnostics.set(uri, diagnostics);
+          this.updateMetadataPanel();
+        }
       });
 
       console.log('✅ Real LSP client started successfully');
@@ -550,6 +606,264 @@ Annual physical exam
     return html;
   }
 
+  private validateDocumentAndShowErrors() {
+    const content = this.model.getValue();
+    const errors = this.detectParseErrors(content);
+    
+    // Clear existing markers
+    monaco.editor.setModelMarkers(this.model, 'yabelfish', []);
+    
+    // Add new error markers
+    if (errors.length > 0) {
+      monaco.editor.setModelMarkers(this.model, 'yabelfish', errors.map(error => ({
+        severity: error.severity,
+        startLineNumber: error.range.startLineNumber,
+        startColumn: error.range.startColumn,
+        endLineNumber: error.range.endLineNumber,
+        endColumn: error.range.endColumn,
+        message: error.message,
+        code: error.code || 'PARSE_ERROR'
+      })));
+    }
+    
+    // Update diagnostics storage for metadata panel
+    const currentUri = this.model.uri.toString();
+    this.diagnostics.set(currentUri, errors);
+    this.updateMetadataPanel();
+  }
+
+  private detectParseErrors(content: string): any[] {
+    const errors: any[] = [];
+    const lines = content.split('\n');
+    
+    lines.forEach((line, lineIndex) => {
+      const lineNumber = lineIndex + 1;
+      
+      // Check for invalid section headers
+      if (line.trim().startsWith('#')) {
+        const headerMatch = line.match(/^(#+)\s*(.*)$/);
+        if (headerMatch) {
+          const level = headerMatch[1].length;
+          const title = headerMatch[2].trim();
+          
+          // Check for invalid header levels (more than 3 #)
+          if (level > 3) {
+            errors.push({
+              severity: monaco.MarkerSeverity.Warning,
+              range: new monaco.Range(lineNumber, 1, lineNumber, line.length + 1),
+              message: `Header level ${level} is too deep. Maximum recommended level is 3.`,
+              code: 'INVALID_HEADER_LEVEL'
+            });
+          }
+          
+          // Check for empty headers
+          if (!title) {
+            errors.push({
+              severity: monaco.MarkerSeverity.Error,
+              range: new monaco.Range(lineNumber, 1, lineNumber, line.length + 1),
+              message: 'Empty header detected. Headers must have content.',
+              code: 'EMPTY_HEADER'
+            });
+          }
+          
+          // Check for invalid medical section headers
+          const validSections = ['patient', 'chief complaint', 'hpi', 'history of present illness', 
+                               'allergies', 'allergies and intolerances', 'medications', 'assessment', 'plan'];
+          if (level === 2 && title && !validSections.some(section => 
+              title.toLowerCase().includes(section))) {
+            errors.push({
+              severity: monaco.MarkerSeverity.Info,
+              range: new monaco.Range(lineNumber, level + 2, lineNumber, line.length + 1),
+              message: `Non-standard section header: "${title}". Consider using standard medical sections.`,
+              code: 'NON_STANDARD_SECTION'
+            });
+          }
+        }
+      }
+      
+      // Check for malformed medical codes
+      this.validateMedicalCodesInLine(line, lineNumber, errors);
+      
+      // Check for malformed patient data
+      this.validatePatientDataInLine(line, lineNumber, errors);
+      
+      // Check for invalid medication formats
+      this.validateMedicationFormats(line, lineNumber, errors);
+      
+      // Check for date format issues
+      this.validateDateFormats(line, lineNumber, errors);
+    });
+    
+    // Check document structure
+    this.validateDocumentStructure(content, errors);
+    
+    return errors;
+  }
+
+  private validateMedicalCodesInLine(line: string, lineNumber: number, errors: any[]) {
+    // Check for invalid ICD-10 codes
+    const icd10Pattern = /\b[A-Z]\d{2}(\.\d+)?\b/g;
+    let match;
+    while ((match = icd10Pattern.exec(line)) !== null) {
+      const code = match[0];
+      const startColumn = match.index + 1;
+      const endColumn = startColumn + code.length;
+      
+      // Validate ICD-10 format more strictly
+      if (!/^[A-Z]\d{2}(\.\d{1,2})?$/.test(code)) {
+        errors.push({
+          severity: monaco.MarkerSeverity.Error,
+          range: new monaco.Range(lineNumber, startColumn, lineNumber, endColumn),
+          message: `Invalid ICD-10 code format: "${code}". Expected format: A12 or A12.3`,
+          code: 'INVALID_ICD10_FORMAT'
+        });
+      } else {
+        // Check if it's a known code (simplified validation)
+        const knownCodes = ['E11', 'E11.9', 'I10', 'I48.91', 'I50.9', 'R06.02', 'R06.00'];
+        const baseCode = code.split('.')[0];
+        if (!knownCodes.includes(baseCode) && !knownCodes.includes(code)) {
+          errors.push({
+            severity: monaco.MarkerSeverity.Info,
+            range: new monaco.Range(lineNumber, startColumn, lineNumber, endColumn),
+            message: `Unknown ICD-10 code: "${code}". Verify this is a valid medical code.`,
+            code: 'UNKNOWN_ICD10_CODE'
+          });
+        }
+      }
+    }
+    
+    // Check for invalid RxNorm codes
+    const rxnormPattern = /\b\d{4,8}\b/g;
+    while ((match = rxnormPattern.exec(line)) !== null) {
+      const code = match[0];
+      const startColumn = match.index + 1;
+      const endColumn = startColumn + code.length;
+      
+      // Basic validation for RxNorm codes (4-8 digits)
+      if (code.length < 4 || code.length > 8) {
+        errors.push({
+          severity: monaco.MarkerSeverity.Warning,
+          range: new monaco.Range(lineNumber, startColumn, lineNumber, endColumn),
+          message: `Suspicious RxNorm code format: "${code}". RxNorm codes are typically 4-8 digits.`,
+          code: 'SUSPICIOUS_RXNORM_FORMAT'
+        });
+      }
+    }
+  }
+
+  private validatePatientDataInLine(line: string, lineNumber: number, errors: any[]) {
+    // Check for invalid date formats in patient data
+    if (line.toLowerCase().includes('dob:') || line.toLowerCase().includes('date of birth:')) {
+      const datePattern = /(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/g;
+      const match = datePattern.exec(line);
+      if (match) {
+        const dateStr = match[1];
+        const startColumn = match.index + 1;
+        const endColumn = startColumn + dateStr.length;
+        
+        // Validate date format
+        if (!/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) {
+          errors.push({
+            severity: monaco.MarkerSeverity.Warning,
+            range: new monaco.Range(lineNumber, startColumn, lineNumber, endColumn),
+            message: `Date format "${dateStr}" should follow MM-DD-YYYY format for consistency.`,
+            code: 'INCONSISTENT_DATE_FORMAT'
+          });
+        }
+      }
+    }
+    
+    // Check for missing required patient fields
+    if (line.toLowerCase().includes('name:') && line.split(':')[1].trim() === '') {
+      errors.push({
+        severity: monaco.MarkerSeverity.Warning,
+        range: new monaco.Range(lineNumber, 1, lineNumber, line.length + 1),
+        message: 'Patient name is required for proper medical documentation.',
+        code: 'MISSING_PATIENT_NAME'
+      });
+    }
+  }
+
+  private validateMedicationFormats(line: string, lineNumber: number, errors: any[]) {
+    // Check for medication dosage format issues
+    if (line.trim().startsWith('-') && (line.toLowerCase().includes('mg') || line.toLowerCase().includes('units'))) {
+      // Look for common medication format issues
+      if (!line.match(/\d+\s*(mg|units|ml|g)\s+(daily|twice daily|three times daily|as needed|prn)/i)) {
+        const dosageMatch = line.match(/(\d+\s*(?:mg|units|ml|g))/i);
+        if (dosageMatch && !line.match(/daily|twice|three times|as needed|prn|bid|tid|qid|q\d+h/i)) {
+          errors.push({
+            severity: monaco.MarkerSeverity.Info,
+            range: new monaco.Range(lineNumber, 1, lineNumber, line.length + 1),
+            message: 'Medication entry may be missing frequency information (e.g., "daily", "twice daily").',
+            code: 'INCOMPLETE_MEDICATION_INFO'
+          });
+        }
+      }
+    }
+  }
+
+  private validateDateFormats(line: string, lineNumber: number, errors: any[]) {
+    // Check for various date formats and flag inconsistencies
+    const datePatterns = [
+      /\b\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4}\b/g,  // MM/DD/YYYY or MM-DD-YYYY
+      /\b\d{4}[-\/]\d{1,2}[-\/]\d{1,2}\b/g,    // YYYY-MM-DD
+      /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},?\s+\d{4}\b/gi // Jan 1, 2023
+    ];
+    
+    datePatterns.forEach(pattern => {
+      let match;
+      while ((match = pattern.exec(line)) !== null) {
+        const dateStr = match[0];
+        const startColumn = match.index + 1;
+        const endColumn = startColumn + dateStr.length;
+        
+        // Check for obviously invalid dates
+        if (dateStr.includes('00-00') || dateStr.includes('/00/') || dateStr.includes('-00-')) {
+          errors.push({
+            severity: monaco.MarkerSeverity.Error,
+            range: new monaco.Range(lineNumber, startColumn, lineNumber, endColumn),
+            message: `Invalid date: "${dateStr}". Dates cannot contain zero months or days.`,
+            code: 'INVALID_DATE'
+          });
+        }
+      }
+    });
+  }
+
+  private validateDocumentStructure(content: string, errors: any[]) {
+    const lines = content.split('\n');
+    let hasPatientSection = false;
+    let hasAssessmentSection = false;
+    
+    lines.forEach((line, index) => {
+      if (line.toLowerCase().includes('## patient')) {
+        hasPatientSection = true;
+      }
+      if (line.toLowerCase().includes('## assessment')) {
+        hasAssessmentSection = true;
+      }
+    });
+    
+    // Check for missing critical sections
+    if (!hasPatientSection) {
+      errors.push({
+        severity: monaco.MarkerSeverity.Warning,
+        range: new monaco.Range(1, 1, 1, 1),
+        message: 'Document is missing a Patient section (## Patient). This is recommended for medical documentation.',
+        code: 'MISSING_PATIENT_SECTION'
+      });
+    }
+    
+    if (!hasAssessmentSection) {
+      errors.push({
+        severity: monaco.MarkerSeverity.Info,
+        range: new monaco.Range(1, 1, 1, 1),
+        message: 'Document may be missing an Assessment section (## Assessment). This is typically required for medical visits.',
+        code: 'MISSING_ASSESSMENT_SECTION'
+      });
+    }
+  }
+
   private extractCodesFromContent(content: string): ExtractedCode[] {
     const codes: ExtractedCode[] = [];
     const lines = content.split('\n');
@@ -682,6 +996,9 @@ Annual physical exam
 
     // Update header with patient and visit information
     this.updateHeader(patient);
+
+    // Update diagnostics panel
+    this.updateDiagnosticsPanel(diagnostics);
 
     // Build hierarchical document structure
     const documentStructure = document.getElementById('document-structure');
@@ -944,6 +1261,78 @@ Annual physical exam
     }).join('');
   }
 
+  private updateDiagnosticsPanel(diagnostics: any[]) {
+    const diagnosticsListElement = document.getElementById('diagnostics-list');
+    if (!diagnosticsListElement) return;
+
+    if (diagnostics.length === 0) {
+      diagnosticsListElement.innerHTML = '<div class="empty-state">No issues detected ✅</div>';
+      return;
+    }
+
+    const groupedDiagnostics = {
+      errors: diagnostics.filter(d => d.severity === monaco.MarkerSeverity.Error),
+      warnings: diagnostics.filter(d => d.severity === monaco.MarkerSeverity.Warning),
+      info: diagnostics.filter(d => d.severity === monaco.MarkerSeverity.Info)
+    };
+
+    let html = '';
+    
+    if (groupedDiagnostics.errors.length > 0) {
+      html += '<div class="diagnostic-group"><h4 class="diagnostic-group-title error">🚨 Errors (' + groupedDiagnostics.errors.length + ')</h4>';
+      groupedDiagnostics.errors.forEach(diagnostic => {
+        html += this.formatDiagnosticItem(diagnostic, 'error');
+      });
+      html += '</div>';
+    }
+    
+    if (groupedDiagnostics.warnings.length > 0) {
+      html += '<div class="diagnostic-group"><h4 class="diagnostic-group-title warning">⚠️ Warnings (' + groupedDiagnostics.warnings.length + ')</h4>';
+      groupedDiagnostics.warnings.forEach(diagnostic => {
+        html += this.formatDiagnosticItem(diagnostic, 'warning');
+      });
+      html += '</div>';
+    }
+    
+    if (groupedDiagnostics.info.length > 0) {
+      html += '<div class="diagnostic-group"><h4 class="diagnostic-group-title info">ℹ️ Info (' + groupedDiagnostics.info.length + ')</h4>';
+      groupedDiagnostics.info.forEach(diagnostic => {
+        html += this.formatDiagnosticItem(diagnostic, 'info');
+      });
+      html += '</div>';
+    }
+
+    diagnosticsListElement.innerHTML = html;
+    
+    // Add click handlers to navigate to errors
+    diagnosticsListElement.querySelectorAll('.diagnostic-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        const lineNumber = parseInt((e.currentTarget as HTMLElement).dataset.line || '1');
+        const column = parseInt((e.currentTarget as HTMLElement).dataset.column || '1');
+        
+        this.editor.setPosition({ lineNumber, column });
+        this.editor.revealLineInCenter(lineNumber);
+        this.editor.focus();
+      });
+    });
+  }
+
+  private formatDiagnosticItem(diagnostic: any, severity: string): string {
+    const line = diagnostic.range?.startLineNumber || 1;
+    const column = diagnostic.range?.startColumn || 1;
+    
+    return `
+      <div class="diagnostic-item ${severity}" data-line="${line}" data-column="${column}" 
+           title="Click to navigate to line ${line}">
+        <div class="diagnostic-header">
+          <span class="diagnostic-line">Line ${line}:${column}</span>
+          <span class="diagnostic-code">${diagnostic.code || 'UNKNOWN'}</span>
+        </div>
+        <div class="diagnostic-message">${diagnostic.message}</div>
+      </div>
+    `;
+  }
+
   private updateSectionSummary() {
     const summaryElement = document.getElementById('section-summary');
     if (!summaryElement) return;
@@ -953,8 +1342,8 @@ Annual physical exam
     const diagnostics = this.diagnostics.get(currentUri) || [];
 
     const codesCount = codes.length;
-    const warningsCount = diagnostics.filter(d => d.severity === 2).length;
-    const errorsCount = diagnostics.filter(d => d.severity === 1).length;
+    const warningsCount = diagnostics.filter(d => d.severity === monaco.MarkerSeverity.Warning).length;
+    const errorsCount = diagnostics.filter(d => d.severity === monaco.MarkerSeverity.Error).length;
 
     summaryElement.innerHTML = `
       <div class="summary-item">

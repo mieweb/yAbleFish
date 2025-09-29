@@ -103,9 +103,90 @@ export class YAbelLSPClient {
     this.messageChannel.port2.onmessage = (event) => {
       const message = event.data;
       console.log('📨 Received from LSP server:', message);
+      
+      // Handle LSP notifications and responses
+      if (message.method === 'textDocument/publishDiagnostics') {
+        this.handleDiagnosticsNotification(message.params);
+      }
     };
 
     this.messageChannel.port2.start();
+  }
+
+  /**
+   * Handle diagnostics notifications from LSP server
+   */
+  private handleDiagnosticsNotification(params: any): void {
+    const { uri, diagnostics } = params;
+    
+    // Convert LSP diagnostics to Monaco markers
+    const markers = diagnostics.map((diagnostic: any) => {
+      let severity: monaco.MarkerSeverity;
+      switch (diagnostic.severity) {
+        case 1: // Error
+          severity = monaco.MarkerSeverity.Error;
+          break;
+        case 2: // Warning
+          severity = monaco.MarkerSeverity.Warning;
+          break;
+        case 3: // Information
+          severity = monaco.MarkerSeverity.Info;
+          break;
+        case 4: // Hint
+          severity = monaco.MarkerSeverity.Hint;
+          break;
+        default:
+          severity = monaco.MarkerSeverity.Info;
+      }
+      
+      return {
+        severity,
+        startLineNumber: diagnostic.range.start.line + 1, // LSP is 0-based, Monaco is 1-based
+        startColumn: diagnostic.range.start.character + 1,
+        endLineNumber: diagnostic.range.end.line + 1,
+        endColumn: diagnostic.range.end.character + 1,
+        message: diagnostic.message,
+        code: diagnostic.code || 'LSP_DIAGNOSTIC',
+        source: diagnostic.source || 'yAbelFish LSP'
+      };
+    });
+    
+    // Find the Monaco model for this URI and set markers
+    const model = monaco.editor.getModels().find(m => m.uri.toString() === uri);
+    if (model) {
+      monaco.editor.setModelMarkers(model, 'yabelfish-lsp', markers);
+      
+      // Emit custom event for UI updates
+      this.emitDiagnosticsEvent(uri, diagnostics);
+    }
+  }
+
+  /**
+   * Emit diagnostics event for UI components to handle
+   */
+  private emitDiagnosticsEvent(uri: string, diagnostics: any[]): void {
+    const event = new CustomEvent('yabelfish-diagnostics', {
+      detail: { uri, diagnostics }
+    });
+    window.dispatchEvent(event);
+  }
+
+  /**
+   * Send notification to LSP server
+   */
+  sendNotification(method: string, params: any): void {
+    if (!this.messageChannel) {
+      console.warn('LSP client not started, cannot send notification');
+      return;
+    }
+
+    const message = {
+      jsonrpc: '2.0',
+      method,
+      params
+    };
+
+    this.messageChannel.port2.postMessage(message);
   }
 
   /**
