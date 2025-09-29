@@ -662,6 +662,151 @@
                 display: none;
             }
         }
+
+        /* Preview Pane Styles */
+        .preview-pane {
+            flex: 1;
+            background: #1e1e1e;
+            color: #cccccc;
+            overflow-y: auto;
+            padding: 0;
+        }
+
+        .preview-content {
+            padding: 20px;
+            max-width: none;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            line-height: 1.6;
+        }
+
+        .preview-content h1 {
+            color: #ffffff;
+            border-bottom: 2px solid #0078d4;
+            padding-bottom: 8px;
+            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .preview-content h2 {
+            color: #9cdcfe;
+            border-left: 4px solid #0078d4;
+            padding-left: 12px;
+            margin: 24px 0 16px 0;
+            font-size: 18px;
+            font-weight: 600;
+            background: rgba(0, 120, 212, 0.1);
+            padding: 8px 0 8px 12px;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .preview-content h3 {
+            color: #4ec9b0;
+            margin: 20px 0 12px 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .preview-content p {
+            margin: 12px 0;
+            color: #cccccc;
+        }
+
+        .preview-content ul, .preview-content ol {
+            margin: 12px 0;
+            padding-left: 24px;
+        }
+
+        .preview-content li {
+            margin: 6px 0;
+            color: #cccccc;
+        }
+
+        .preview-content strong {
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .preview-content em {
+            color: #dcdcaa;
+            font-style: italic;
+        }
+
+        .preview-content code {
+            background: #2d2d30;
+            border: 1px solid #3e3e42;
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            color: #ce9178;
+        }
+
+        .preview-content pre {
+            background: #2d2d30;
+            border: 1px solid #3e3e42;
+            border-radius: 6px;
+            padding: 16px;
+            overflow-x: auto;
+            margin: 16px 0;
+        }
+
+        .preview-content pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            color: #cccccc;
+        }
+
+        .preview-content blockquote {
+            border-left: 4px solid #007acc;
+            background: rgba(0, 122, 204, 0.1);
+            margin: 16px 0;
+            padding: 8px 16px;
+            color: #e6e6e6;
+        }
+
+        .preview-content table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 16px 0;
+        }
+
+        .preview-content th, .preview-content td {
+            border: 1px solid #3e3e42;
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        .preview-content th {
+            background: #2d2d30;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        /* Medical-specific styling for better readability */
+        .preview-content .medical-term {
+            background: rgba(255, 165, 0, 0.15);
+            border-radius: 3px;
+            padding: 2px 4px;
+            color: #ffb366;
+            font-weight: 500;
+        }
+
+        .preview-content .patient-info {
+            background: rgba(0, 122, 204, 0.1);
+            border: 1px solid #007acc;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 16px 0;
+        }
+
+        .preview-content .section-divider {
+            border: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #007acc, transparent);
+            margin: 20px 0;
+        }
     </style>
 </head>
 <body>
@@ -683,6 +828,16 @@
                 font-size: 12px;
                 margin-left: 12px;
             ">📄 Switch Patient</button>
+            <button id="preview-toggle" style="
+                background: #16825d; 
+                color: white; 
+                border: none; 
+                padding: 6px 12px; 
+                border-radius: 4px; 
+                cursor: pointer; 
+                font-size: 12px;
+                margin-left: 8px;
+            ">👁️ Preview</button>
         </div>
         <div class="header-info">
             <div class="patient-info">
@@ -711,6 +866,11 @@
                 </div>
             </div>
             <div id="editor"></div>
+            <div id="preview-pane" class="preview-pane" style="display: none;">
+                <div id="preview-content" class="preview-content">
+                    <!-- Markdown preview will be rendered here -->
+                </div>
+            </div>
         </div>
 
         <div id="metadata-panel" class="metadata-panel">

@@ -95,6 +95,7 @@ Patient returns for routine diabetes follow-up. Reports good adherence to medica
     this.initializeLSP();
     this.setupMetadataPanel();
     this.setupDocumentSwitcher();
+    this.setupPreviewToggle();
     
     // Initial section calculation
     this.calculateSectionRanges();
@@ -411,6 +412,142 @@ Annual physical exam
       // Set initial button text
       switchButton.textContent = `📄 Current: ${documents[0].name}`;
     }
+  }
+
+  private setupPreviewToggle() {
+    const previewButton = document.getElementById('preview-toggle');
+    const editorElement = document.getElementById('editor');
+    const previewPane = document.getElementById('preview-pane');
+    let isPreviewMode = false;
+
+    if (previewButton && editorElement && previewPane) {
+      previewButton.addEventListener('click', () => {
+        isPreviewMode = !isPreviewMode;
+        
+        if (isPreviewMode) {
+          // Switch to preview mode
+          editorElement.style.display = 'none';
+          previewPane.style.display = 'block';
+          previewButton.textContent = '✏️ Edit';
+          previewButton.style.background = '#d83b01';
+          
+          // Convert markdown to HTML and update preview
+          this.updatePreview();
+        } else {
+          // Switch to editor mode
+          editorElement.style.display = 'block';
+          previewPane.style.display = 'none';
+          previewButton.textContent = '👁️ Preview';
+          previewButton.style.background = '#16825d';
+        }
+      });
+
+      // Update preview when content changes
+      this.model.onDidChangeContent(() => {
+        if (isPreviewMode) {
+          this.updatePreview();
+        }
+      });
+    }
+  }
+
+  private updatePreview() {
+    const previewContent = document.getElementById('preview-content');
+    if (!previewContent) return;
+
+    const markdownContent = this.model.getValue();
+    const htmlContent = this.convertMarkdownToHtml(markdownContent);
+    previewContent.innerHTML = htmlContent;
+  }
+
+  private convertMarkdownToHtml(markdown: string): string {
+    let html = markdown;
+
+    // Convert headers
+    html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+    html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+    html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+    // Convert bold and italic
+    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+    html = html.replace(/_(.+?)_/g, '<em>$1</em>');
+
+    // Convert inline code
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    // Convert lists
+    const lines = html.split('\n');
+    let inList = false;
+    let listType = '';
+    const processedLines: string[] = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const isListItem = /^[\s]*[-*+]\s+/.test(line) || /^[\s]*\d+\.\s+/.test(line);
+      const isOrderedList = /^[\s]*\d+\.\s+/.test(line);
+      const currentListType = isOrderedList ? 'ol' : 'ul';
+
+      if (isListItem) {
+        if (!inList) {
+          processedLines.push(`<${currentListType}>`);
+          inList = true;
+          listType = currentListType;
+        } else if (listType !== currentListType) {
+          processedLines.push(`</${listType}>`);
+          processedLines.push(`<${currentListType}>`);
+          listType = currentListType;
+        }
+        const itemText = line.replace(/^[\s]*[-*+]\s+/, '').replace(/^[\s]*\d+\.\s+/, '');
+        processedLines.push(`<li>${itemText}</li>`);
+      } else {
+        if (inList) {
+          processedLines.push(`</${listType}>`);
+          inList = false;
+          listType = '';
+        }
+        processedLines.push(line);
+      }
+    }
+
+    if (inList) {
+      processedLines.push(`</${listType}>`);
+    }
+
+    html = processedLines.join('\n');
+
+    // Convert paragraphs (double newlines)
+    html = html.replace(/\n\n+/g, '</p><p>');
+    html = '<p>' + html + '</p>';
+
+    // Clean up empty paragraphs and fix header paragraphs
+    html = html.replace(/<p><\/p>/g, '');
+    html = html.replace(/<p>(<h[1-6]>)/g, '$1');
+    html = html.replace(/(<\/h[1-6]>)<\/p>/g, '$1');
+    html = html.replace(/<p>(<ul>|<ol>)/g, '$1');
+    html = html.replace(/(<\/ul>|<\/ol>)<\/p>/g, '$1');
+
+    // Highlight medical terms
+    html = this.highlightMedicalTerms(html);
+
+    return html;
+  }
+
+  private highlightMedicalTerms(html: string): string {
+    const medicalTerms = [
+      'diabetes', 'hypertension', 'CHF', 'atrial fibrillation',
+      'chest pain', 'shortness of breath', 'metformin', 'insulin',
+      'lisinopril', 'penicillin', 'sulfonamide', 'HbA1c',
+      'congestive heart failure', 'hypoglycemia'
+    ];
+
+    medicalTerms.forEach(term => {
+      const regex = new RegExp(`\\b(${term})\\b`, 'gi');
+      html = html.replace(regex, '<span class="medical-term">$1</span>');
+    });
+
+    return html;
   }
 
   private extractCodesFromContent(content: string): ExtractedCode[] {
