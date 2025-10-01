@@ -8,7 +8,7 @@ A Language Server Protocol (LSP) server designed for medical documentation using
 
 yAbel is designed to be:
 - **Markdown-inspired** for natural text flow and readability
-- **YAML-influenced** for structured data when needed  
+- **YAML-influenced** for structured data when needed (see [example](https://www.bairesdev.com/tools/json2yaml/) for yaml and json)
 - **Forgiving and flexible** - not strict about syntax rules
 - **Clinician-friendly** - prioritizes ease of writing over rigid formatting
 - **Machine-parseable** - structured enough for intelligent software processing
