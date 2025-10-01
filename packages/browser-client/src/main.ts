@@ -754,7 +754,7 @@ Annual physical exam
   private validatePatientDataInLine(line: string, lineNumber: number, errors: any[]) {
     // Check for invalid date formats in patient data
     if (line.toLowerCase().includes('dob:') || line.toLowerCase().includes('date of birth:')) {
-      const datePattern = /(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/g;
+      const datePattern = /(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})/g;
       const match = datePattern.exec(line);
       if (match) {
         const dateStr = match[1];
@@ -805,8 +805,8 @@ Annual physical exam
   private validateDateFormats(line: string, lineNumber: number, errors: any[]) {
     // Check for various date formats and flag inconsistencies
     const datePatterns = [
-      /\b\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4}\b/g,  // MM/DD/YYYY or MM-DD-YYYY
-      /\b\d{4}[-\/]\d{1,2}[-\/]\d{1,2}\b/g,    // YYYY-MM-DD
+      /\b\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\b/g,  // MM/DD/YYYY or MM-DD-YYYY
+      /\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b/g,    // YYYY-MM-DD
       /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},?\s+\d{4}\b/gi // Jan 1, 2023
     ];
     
@@ -835,7 +835,7 @@ Annual physical exam
     let hasPatientSection = false;
     let hasAssessmentSection = false;
     
-    lines.forEach((line, index) => {
+    lines.forEach((line, _index) => {
       if (line.toLowerCase().includes('## patient')) {
         hasPatientSection = true;
       }

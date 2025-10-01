@@ -16,25 +16,9 @@ class SimpleMedicalTerminology {
   }
 }
 
-class SimpleYAbelParser {
-  parse(text: string): any {
-    return { success: true, errors: [] };
-  }
-  
-  validate(text: string): any[] {
-    const errors = [];
-    // Basic validation - could be expanded
-    if (text.includes('syntax error')) {
-      errors.push({ message: 'Syntax error detected', line: 0 });
-    }
-    return errors;
-  }
-}
-
 let port: MessagePort;
 let terminology: SimpleMedicalTerminology;
-let parser: SimpleYAbelParser;
-let documents: Map<string, { uri: string; text: string; version: number }> = new Map();
+const documents: Map<string, { uri: string; text: string; version: number }> = new Map();
 
 self.onmessage = (event: MessageEvent) => {
   if (event.data?.type === 'init' && event.data?.port) {
@@ -48,7 +32,6 @@ function setupLSPServer() {
 
   // Initialize components
   terminology = new SimpleMedicalTerminology();
-  parser = new SimpleYAbelParser();
 
   port.onmessage = async (event: MessageEvent) => {
     const request = event.data;
@@ -84,7 +67,7 @@ function setupLSPServer() {
           response = null; // No response for notifications
           break;
           
-        case 'textDocument/completion':
+        case 'textDocument/completion': {
           const completions = await handleCompletion(request.params);
           response = {
             jsonrpc: '2.0',
@@ -92,6 +75,7 @@ function setupLSPServer() {
             result: completions
           };
           break;
+        }
           
         default:
           response = {
@@ -234,7 +218,7 @@ function validateMedicalCodesInLine(line: string, lineIndex: number, diagnostics
           start: { line: lineIndex, character: startChar },
           end: { line: lineIndex, character: endChar }
         },
-        message: `Invalid ICD-10 code format: \"${code}\". Expected format: A12 or A12.34`,
+        message: `Invalid ICD-10 code format: "${code}". Expected format: A12 or A12.34`,
         code: 'INVALID_ICD10_FORMAT',
         source: 'yAbelFish LSP'
       });
@@ -248,7 +232,7 @@ function validateMedicalCodesInLine(line: string, lineIndex: number, diagnostics
             start: { line: lineIndex, character: startChar },
             end: { line: lineIndex, character: endChar }
           },
-          message: `Unknown ICD-10 code: \"${code}\". Please verify this is a valid medical code.`,
+          message: `Unknown ICD-10 code: "${code}". Please verify this is a valid medical code.`,
           code: 'UNKNOWN_ICD10_CODE',
           source: 'yAbelFish LSP'
         });
@@ -257,7 +241,7 @@ function validateMedicalCodesInLine(line: string, lineIndex: number, diagnostics
   }
 }
 
-async function handleCompletion(params: any) {
+async function handleCompletion(_params: any) {
   // Simple completion implementation
   return { items: [] };
 }

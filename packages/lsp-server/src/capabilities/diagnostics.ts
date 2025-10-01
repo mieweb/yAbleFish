@@ -255,7 +255,7 @@ export class DiagnosticsProvider {
   /**
    * Validate patient data format
    */
-  private validatePatientData(text: string, document: TextDocument): Diagnostic[] {
+  private validatePatientData(text: string, _document: TextDocument): Diagnostic[] {
     const diagnostics: Diagnostic[] = [];
     const lines = text.split('\n');
     
@@ -276,7 +276,7 @@ export class DiagnosticsProvider {
       
       // Check for invalid date formats in patient data
       if (line.toLowerCase().includes('dob:') || line.toLowerCase().includes('date of birth:')) {
-        const datePattern = /(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/g;
+        const datePattern = /(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})/g;
         const match = datePattern.exec(line);
         if (match) {
           const dateStr = match[1];
@@ -320,7 +320,7 @@ export class DiagnosticsProvider {
   /**
    * Validate medication format
    */
-  private validateMedicationFormats(text: string, document: TextDocument): Diagnostic[] {
+  private validateMedicationFormats(text: string, _document: TextDocument): Diagnostic[] {
     const diagnostics: Diagnostic[] = [];
     const lines = text.split('\n');
     
@@ -350,13 +350,13 @@ export class DiagnosticsProvider {
   /**
    * Validate date formats throughout document
    */
-  private validateDateFormats(text: string, document: TextDocument): Diagnostic[] {
+  private validateDateFormats(text: string, _document: TextDocument): Diagnostic[] {
     const diagnostics: Diagnostic[] = [];
     const lines = text.split('\n');
     
     const datePatterns = [
-      { regex: /\b\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4}\b/g, name: 'MM/DD/YYYY or MM-DD-YYYY' },
-      { regex: /\b\d{4}[-\/]\d{1,2}[-\/]\d{1,2}\b/g, name: 'YYYY-MM-DD' },
+      { regex: /\b\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\b/g, name: 'MM/DD/YYYY or MM-DD-YYYY' },
+      { regex: /\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b/g, name: 'YYYY-MM-DD' },
       { regex: /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},?\s+\d{4}\b/gi, name: 'Month Day, Year' }
     ];
     
