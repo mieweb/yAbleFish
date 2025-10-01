@@ -96,7 +96,7 @@ Patient returns for routine diabetes follow-up. Reports good adherence to medica
     this.setupMetadataPanel();
     this.setupDocumentSwitcher();
     this.setupPreviewToggle();
-    
+
     // Initial section calculation
     this.calculateSectionRanges();
     this.updateSectionTitle(this.currentSection);
@@ -105,7 +105,7 @@ Patient returns for routine diabetes follow-up. Reports good adherence to medica
   private initializeMonaco() {
     // Set Monaco theme
     monaco.editor.setTheme('vs');
-    
+
     // Configure Monaco editor options
     monaco.editor.EditorOptions.readOnly.defaultValue = false;
   }
@@ -116,7 +116,7 @@ Patient returns for routine diabetes follow-up. Reports good adherence to medica
       id: 'yabel',
       extensions: ['.yabel', '.yaml'],
       aliases: ['yAbel', 'yabel'],
-      mimetypes: ['text/x-yabel', 'application/x-yabel']
+      mimetypes: ['text/x-yabel', 'application/x-yabel'],
     });
 
     // Basic tokenization for medical documents
@@ -127,9 +127,9 @@ Patient returns for routine diabetes follow-up. Reports good adherence to medica
           [/^[A-Za-z][^:]*:/, 'field-name'],
           [/\b[A-Z]\d{2}(\.\d+)?\b/, 'icd-code'],
           [/\b\d{4,}\b/, 'rxnorm-code'],
-          [/#.*$/, 'comment']
-        ]
-      }
+          [/#.*$/, 'comment'],
+        ],
+      },
     });
 
     // Define theme for medical terminology
@@ -141,9 +141,9 @@ Patient returns for routine diabetes follow-up. Reports good adherence to medica
         { token: 'field-name', foreground: '008000', fontStyle: 'bold' },
         { token: 'icd-code', foreground: '800080' },
         { token: 'rxnorm-code', foreground: 'ff6600' },
-        { token: 'comment', foreground: '808080', fontStyle: 'italic' }
+        { token: 'comment', foreground: '808080', fontStyle: 'italic' },
       ],
-      colors: {}
+      colors: {},
     });
   }
 
@@ -199,22 +199,20 @@ Patient returns for routine diabetes follow-up. Reports good adherence to medica
       // TODO: Send document changes to real LSP server
       // Recalculate section ranges when content changes
       this.calculateSectionRanges();
-      
+
       // Validate document and show errors
       this.validateDocumentAndShowErrors();
     });
-    
+
     // Initial validation
     this.validateDocumentAndShowErrors();
   }
-
-
 
   private async initializeLSP() {
     try {
       // Import and start the new LSP client
       const { YAbelLSPClient } = await import('./lsp/client.js');
-      
+
       const lspClient = new YAbelLSPClient();
       await lspClient.start();
 
@@ -228,10 +226,10 @@ Patient returns for routine diabetes follow-up. Reports good adherence to medica
             synchronization: {
               didOpen: true,
               didChange: true,
-              didClose: true
-            }
-          }
-        }
+              didClose: true,
+            },
+          },
+        },
       });
 
       // Send initialized notification
@@ -244,8 +242,8 @@ Patient returns for routine diabetes follow-up. Reports good adherence to medica
           uri: uri,
           languageId: 'yabel',
           version: 1,
-          text: this.model.getValue()
-        }
+          text: this.model.getValue(),
+        },
       });
 
       // Listen for content changes and notify LSP server
@@ -253,13 +251,13 @@ Patient returns for routine diabetes follow-up. Reports good adherence to medica
         lspClient.sendNotification('textDocument/didChange', {
           textDocument: {
             uri: uri,
-            version: Date.now() // Simple versioning
+            version: Date.now(), // Simple versioning
           },
           contentChanges: [
             {
-              text: this.model.getValue() // Send full text for simplicity
-            }
-          ]
+              text: this.model.getValue(), // Send full text for simplicity
+            },
+          ],
         });
       });
 
@@ -313,21 +311,22 @@ Patient returns for routine diabetes follow-up. Reports good adherence to medica
     // Extract visit information from document content
     const content = this.model.getValue();
     const visitInfo = this.extractVisitInfo(content);
-    
+
     // Update patient info in header
     const patientInfoEl = document.querySelector('.patient-info');
     if (patientInfoEl && patient) {
-      const patientName = patient.name && patient.surname 
-        ? `${patient.name} ${patient.surname}` 
-        : patient.name || 'Unknown Patient';
+      const patientName =
+        patient.name && patient.surname
+          ? `${patient.name} ${patient.surname}`
+          : patient.name || 'Unknown Patient';
       const patientDob = patient.dob || 'Unknown DOB';
-      
+
       patientInfoEl.innerHTML = `
         <span>👤 ${patientName}</span>
         <span>🎂 ${patientDob}</span>
       `;
     }
-    
+
     // Update visit info in header
     const visitInfoEl = document.querySelector('.visit-info');
     if (visitInfoEl && visitInfo) {
@@ -336,13 +335,14 @@ Patient returns for routine diabetes follow-up. Reports good adherence to medica
         <span>📅 ${visitInfo.date || 'No Date'}</span>
       `;
     }
-    
+
     // Update section title with patient and visit info
     const sectionTitleEl = document.querySelector('.section-title');
     if (sectionTitleEl && patient && visitInfo) {
-      const patientName = patient.name && patient.surname 
-        ? `${patient.name} ${patient.surname}` 
-        : patient.name || 'Unknown Patient';
+      const patientName =
+        patient.name && patient.surname
+          ? `${patient.name} ${patient.surname}`
+          : patient.name || 'Unknown Patient';
       sectionTitleEl.textContent = `Medical Documentation - ${patientName} (${visitInfo.encounter || 'Visit'})`;
     }
   }
@@ -351,23 +351,27 @@ Patient returns for routine diabetes follow-up. Reports good adherence to medica
     // Extract visit information from the main heading
     const lines = content.split('\n');
     const firstLine = lines[0];
-    
+
     // Look for visit header pattern: # Visit Enc #: 139 Date: 09-22-2025 RE: Heart, William 02-14-1964
-    const visitMatch = firstLine.match(/^#\s*Visit\s+Enc\s*#?:\s*(\w+).*Date:\s*([\d-]+)/i);
+    const visitMatch = firstLine.match(
+      /^#\s*Visit\s+Enc\s*#?:\s*(\w+).*Date:\s*([\d-]+)/i
+    );
     if (visitMatch) {
       return {
         encounter: `Enc #${visitMatch[1]}`,
-        date: visitMatch[2]
+        date: visitMatch[2],
       };
     }
-    
+
     // Fallback: try to extract any encounter and date info
     const encMatch = firstLine.match(/Enc\s*#?:\s*(\w+)/i);
-    const dateMatch = firstLine.match(/Date:\s*([\d-]+)/i) || firstLine.match(/([\d]{2}-[\d]{2}-[\d]{4})/);
-    
+    const dateMatch =
+      firstLine.match(/Date:\s*([\d-]+)/i) ||
+      firstLine.match(/([\d]{2}-[\d]{2}-[\d]{4})/);
+
     return {
       encounter: encMatch ? `Enc #${encMatch[1]}` : null,
-      date: dateMatch ? dateMatch[1] : null
+      date: dateMatch ? dateMatch[1] : null,
     };
   }
 
@@ -376,7 +380,7 @@ Patient returns for routine diabetes follow-up. Reports good adherence to medica
     if (switchButton) {
       const documents = [
         {
-          name: "Robert Johnson",
+          name: 'Robert Johnson',
           content: `# Visit Enc #: 142 Date: 09-23-2025 RE: Johnson, Robert 01-15-1975
 
 ## Patient
@@ -407,10 +411,10 @@ Patient returns for routine diabetes follow-up. Reports good adherence to medica
 ## Plan
 - Continue current diabetes regimen
 - HbA1c in 3 months
-- Follow up in 3 months`
+- Follow up in 3 months`,
         },
         {
-          name: "William Heart",
+          name: 'William Heart',
           content: `# Visit Enc #: 139 Date: 09-22-2025 RE: Heart, William 02-14-1964
 
 ## Patient
@@ -428,10 +432,10 @@ Chest pain and shortness of breath
 
 ## Plan
 - Continue lisinopril 10 mg daily
-- Follow up in 3 months`
+- Follow up in 3 months`,
         },
         {
-          name: "Jane Doe",
+          name: 'Jane Doe',
           content: `# Visit Enc #: 98 Date: 09-20-2025 RE: Doe, Jane 03-10-1985
 
 ## Patient
@@ -448,8 +452,8 @@ Annual physical exam
 
 ## Plan
 - Continue routine care
-- Next annual exam in 12 months`
-        }
+- Next annual exam in 12 months`,
+        },
       ];
 
       let currentDocIndex = 0;
@@ -457,10 +461,10 @@ Annual physical exam
       switchButton.addEventListener('click', () => {
         currentDocIndex = (currentDocIndex + 1) % documents.length;
         const newDoc = documents[currentDocIndex];
-        
+
         // Update the model content
         this.model.setValue(newDoc.content);
-        
+
         // Update button text to show current patient
         switchButton.textContent = `📄 Current: ${newDoc.name}`;
       });
@@ -479,14 +483,14 @@ Annual physical exam
     if (previewButton && editorElement && previewPane) {
       previewButton.addEventListener('click', () => {
         isPreviewMode = !isPreviewMode;
-        
+
         if (isPreviewMode) {
           // Switch to preview mode
           editorElement.style.display = 'none';
           previewPane.style.display = 'block';
           previewButton.textContent = '✏️ Edit';
           previewButton.style.background = '#d83b01';
-          
+
           // Convert markdown to HTML and update preview
           this.updatePreview();
         } else {
@@ -541,7 +545,8 @@ Annual physical exam
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      const isListItem = /^[\s]*[-*+]\s+/.test(line) || /^[\s]*\d+\.\s+/.test(line);
+      const isListItem =
+        /^[\s]*[-*+]\s+/.test(line) || /^[\s]*\d+\.\s+/.test(line);
       const isOrderedList = /^[\s]*\d+\.\s+/.test(line);
       const currentListType = isOrderedList ? 'ol' : 'ul';
 
@@ -555,7 +560,9 @@ Annual physical exam
           processedLines.push(`<${currentListType}>`);
           listType = currentListType;
         }
-        const itemText = line.replace(/^[\s]*[-*+]\s+/, '').replace(/^[\s]*\d+\.\s+/, '');
+        const itemText = line
+          .replace(/^[\s]*[-*+]\s+/, '')
+          .replace(/^[\s]*\d+\.\s+/, '');
         processedLines.push(`<li>${itemText}</li>`);
       } else {
         if (inList) {
@@ -592,10 +599,20 @@ Annual physical exam
 
   private highlightMedicalTerms(html: string): string {
     const medicalTerms = [
-      'diabetes', 'hypertension', 'CHF', 'atrial fibrillation',
-      'chest pain', 'shortness of breath', 'metformin', 'insulin',
-      'lisinopril', 'penicillin', 'sulfonamide', 'HbA1c',
-      'congestive heart failure', 'hypoglycemia'
+      'diabetes',
+      'hypertension',
+      'CHF',
+      'atrial fibrillation',
+      'chest pain',
+      'shortness of breath',
+      'metformin',
+      'insulin',
+      'lisinopril',
+      'penicillin',
+      'sulfonamide',
+      'HbA1c',
+      'congestive heart failure',
+      'hypoglycemia',
     ];
 
     medicalTerms.forEach(term => {
@@ -609,23 +626,27 @@ Annual physical exam
   private validateDocumentAndShowErrors() {
     const content = this.model.getValue();
     const errors = this.detectParseErrors(content);
-    
+
     // Clear existing markers
     monaco.editor.setModelMarkers(this.model, 'yabelfish', []);
-    
+
     // Add new error markers
     if (errors.length > 0) {
-      monaco.editor.setModelMarkers(this.model, 'yabelfish', errors.map(error => ({
-        severity: error.severity,
-        startLineNumber: error.range.startLineNumber,
-        startColumn: error.range.startColumn,
-        endLineNumber: error.range.endLineNumber,
-        endColumn: error.range.endColumn,
-        message: error.message,
-        code: error.code || 'PARSE_ERROR'
-      })));
+      monaco.editor.setModelMarkers(
+        this.model,
+        'yabelfish',
+        errors.map(error => ({
+          severity: error.severity,
+          startLineNumber: error.range.startLineNumber,
+          startColumn: error.range.startColumn,
+          endLineNumber: error.range.endLineNumber,
+          endColumn: error.range.endColumn,
+          message: error.message,
+          code: error.code || 'PARSE_ERROR',
+        }))
+      );
     }
-    
+
     // Update diagnostics storage for metadata panel
     const currentUri = this.model.uri.toString();
     this.diagnostics.set(currentUri, errors);
@@ -635,72 +656,105 @@ Annual physical exam
   private detectParseErrors(content: string): any[] {
     const errors: any[] = [];
     const lines = content.split('\n');
-    
+
     lines.forEach((line, lineIndex) => {
       const lineNumber = lineIndex + 1;
-      
+
       // Check for invalid section headers
       if (line.trim().startsWith('#')) {
         const headerMatch = line.match(/^(#+)\s*(.*)$/);
         if (headerMatch) {
           const level = headerMatch[1].length;
           const title = headerMatch[2].trim();
-          
+
           // Check for invalid header levels (more than 3 #)
           if (level > 3) {
             errors.push({
               severity: monaco.MarkerSeverity.Warning,
-              range: new monaco.Range(lineNumber, 1, lineNumber, line.length + 1),
+              range: new monaco.Range(
+                lineNumber,
+                1,
+                lineNumber,
+                line.length + 1
+              ),
               message: `Header level ${level} is too deep. Maximum recommended level is 3.`,
-              code: 'INVALID_HEADER_LEVEL'
+              code: 'INVALID_HEADER_LEVEL',
             });
           }
-          
+
           // Check for empty headers
           if (!title) {
             errors.push({
               severity: monaco.MarkerSeverity.Error,
-              range: new monaco.Range(lineNumber, 1, lineNumber, line.length + 1),
+              range: new monaco.Range(
+                lineNumber,
+                1,
+                lineNumber,
+                line.length + 1
+              ),
               message: 'Empty header detected. Headers must have content.',
-              code: 'EMPTY_HEADER'
+              code: 'EMPTY_HEADER',
             });
           }
-          
+
           // Check for invalid medical section headers
-          const validSections = ['patient', 'chief complaint', 'hpi', 'history of present illness', 
-                               'allergies', 'allergies and intolerances', 'medications', 'assessment', 'plan'];
-          if (level === 2 && title && !validSections.some(section => 
-              title.toLowerCase().includes(section))) {
+          const validSections = [
+            'patient',
+            'chief complaint',
+            'hpi',
+            'history of present illness',
+            'allergies',
+            'allergies and intolerances',
+            'medications',
+            'assessment',
+            'plan',
+          ];
+          if (
+            level === 2 &&
+            title &&
+            !validSections.some(section =>
+              title.toLowerCase().includes(section)
+            )
+          ) {
             errors.push({
               severity: monaco.MarkerSeverity.Info,
-              range: new monaco.Range(lineNumber, level + 2, lineNumber, line.length + 1),
+              range: new monaco.Range(
+                lineNumber,
+                level + 2,
+                lineNumber,
+                line.length + 1
+              ),
               message: `Non-standard section header: "${title}". Consider using standard medical sections.`,
-              code: 'NON_STANDARD_SECTION'
+              code: 'NON_STANDARD_SECTION',
             });
           }
         }
       }
-      
+
       // Check for malformed medical codes
       this.validateMedicalCodesInLine(line, lineNumber, errors);
-      
+
       // Check for malformed patient data
       this.validatePatientDataInLine(line, lineNumber, errors);
-      
+
       // Check for invalid medication formats
       this.validateMedicationFormats(line, lineNumber, errors);
-      
+
       // Check for date format issues
       this.validateDateFormats(line, lineNumber, errors);
     });
-    
+
     // Check document structure
     this.validateDocumentStructure(content, errors);
-    
+
     return errors;
   }
 
-  private validateMedicalCodesInLine(line: string, lineNumber: number, errors: any[]) {
+  private validateMedicalCodesInLine(
+    line: string,
+    lineNumber: number,
+    errors: any[]
+  ) {
     // Check for invalid ICD-10 codes
     const icd10Pattern = /\b[A-Z]\d{2}(\.\d+)?\b/g;
     let match;
@@ -708,94 +762,150 @@ Annual physical exam
       const code = match[0];
       const startColumn = match.index + 1;
       const endColumn = startColumn + code.length;
-      
+
       // Validate ICD-10 format more strictly
       if (!/^[A-Z]\d{2}(\.\d{1,2})?$/.test(code)) {
         errors.push({
           severity: monaco.MarkerSeverity.Error,
-          range: new monaco.Range(lineNumber, startColumn, lineNumber, endColumn),
+          range: new monaco.Range(
+            lineNumber,
+            startColumn,
+            lineNumber,
+            endColumn
+          ),
           message: `Invalid ICD-10 code format: "${code}". Expected format: A12 or A12.3`,
-          code: 'INVALID_ICD10_FORMAT'
+          code: 'INVALID_ICD10_FORMAT',
         });
       } else {
         // Check if it's a known code (simplified validation)
-        const knownCodes = ['E11', 'E11.9', 'I10', 'I48.91', 'I50.9', 'R06.02', 'R06.00'];
+        const knownCodes = [
+          'E11',
+          'E11.9',
+          'I10',
+          'I48.91',
+          'I50.9',
+          'R06.02',
+          'R06.00',
+        ];
         const baseCode = code.split('.')[0];
         if (!knownCodes.includes(baseCode) && !knownCodes.includes(code)) {
           errors.push({
             severity: monaco.MarkerSeverity.Info,
-            range: new monaco.Range(lineNumber, startColumn, lineNumber, endColumn),
+            range: new monaco.Range(
+              lineNumber,
+              startColumn,
+              lineNumber,
+              endColumn
+            ),
             message: `Unknown ICD-10 code: "${code}". Verify this is a valid medical code.`,
-            code: 'UNKNOWN_ICD10_CODE'
+            code: 'UNKNOWN_ICD10_CODE',
           });
         }
       }
     }
-    
+
     // Check for invalid RxNorm codes
     const rxnormPattern = /\b\d{4,8}\b/g;
     while ((match = rxnormPattern.exec(line)) !== null) {
       const code = match[0];
       const startColumn = match.index + 1;
       const endColumn = startColumn + code.length;
-      
+
       // Basic validation for RxNorm codes (4-8 digits)
       if (code.length < 4 || code.length > 8) {
         errors.push({
           severity: monaco.MarkerSeverity.Warning,
-          range: new monaco.Range(lineNumber, startColumn, lineNumber, endColumn),
+          range: new monaco.Range(
+            lineNumber,
+            startColumn,
+            lineNumber,
+            endColumn
+          ),
           message: `Suspicious RxNorm code format: "${code}". RxNorm codes are typically 4-8 digits.`,
-          code: 'SUSPICIOUS_RXNORM_FORMAT'
+          code: 'SUSPICIOUS_RXNORM_FORMAT',
         });
       }
     }
   }
 
-  private validatePatientDataInLine(line: string, lineNumber: number, errors: any[]) {
+  private validatePatientDataInLine(
+    line: string,
+    lineNumber: number,
+    errors: any[]
+  ) {
     // Check for invalid date formats in patient data
-    if (line.toLowerCase().includes('dob:') || line.toLowerCase().includes('date of birth:')) {
+    if (
+      line.toLowerCase().includes('dob:') ||
+      line.toLowerCase().includes('date of birth:')
+    ) {
       const datePattern = /(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})/g;
       const match = datePattern.exec(line);
       if (match) {
         const dateStr = match[1];
         const startColumn = match.index + 1;
         const endColumn = startColumn + dateStr.length;
-        
+
         // Validate date format
         if (!/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) {
           errors.push({
             severity: monaco.MarkerSeverity.Warning,
-            range: new monaco.Range(lineNumber, startColumn, lineNumber, endColumn),
+            range: new monaco.Range(
+              lineNumber,
+              startColumn,
+              lineNumber,
+              endColumn
+            ),
             message: `Date format "${dateStr}" should follow MM-DD-YYYY format for consistency.`,
-            code: 'INCONSISTENT_DATE_FORMAT'
+            code: 'INCONSISTENT_DATE_FORMAT',
           });
         }
       }
     }
-    
+
     // Check for missing required patient fields
-    if (line.toLowerCase().includes('name:') && line.split(':')[1].trim() === '') {
+    if (
+      line.toLowerCase().includes('name:') &&
+      line.split(':')[1].trim() === ''
+    ) {
       errors.push({
         severity: monaco.MarkerSeverity.Warning,
         range: new monaco.Range(lineNumber, 1, lineNumber, line.length + 1),
         message: 'Patient name is required for proper medical documentation.',
-        code: 'MISSING_PATIENT_NAME'
+        code: 'MISSING_PATIENT_NAME',
       });
     }
   }
 
-  private validateMedicationFormats(line: string, lineNumber: number, errors: any[]) {
+  private validateMedicationFormats(
+    line: string,
+    lineNumber: number,
+    errors: any[]
+  ) {
     // Check for medication dosage format issues
-    if (line.trim().startsWith('-') && (line.toLowerCase().includes('mg') || line.toLowerCase().includes('units'))) {
+    if (
+      line.trim().startsWith('-') &&
+      (line.toLowerCase().includes('mg') ||
+        line.toLowerCase().includes('units'))
+    ) {
       // Look for common medication format issues
-      if (!line.match(/\d+\s*(mg|units|ml|g)\s+(daily|twice daily|three times daily|as needed|prn)/i)) {
+      if (
+        !line.match(
+          /\d+\s*(mg|units|ml|g)\s+(daily|twice daily|three times daily|as needed|prn)/i
+        )
+      ) {
         const dosageMatch = line.match(/(\d+\s*(?:mg|units|ml|g))/i);
-        if (dosageMatch && !line.match(/daily|twice|three times|as needed|prn|bid|tid|qid|q\d+h/i)) {
+        if (
+          dosageMatch &&
+          !line.match(
+            /daily|twice|three times|as needed|prn|bid|tid|qid|q\d+h/i
+          )
+        ) {
           errors.push({
             severity: monaco.MarkerSeverity.Info,
             range: new monaco.Range(lineNumber, 1, lineNumber, line.length + 1),
-            message: 'Medication entry may be missing frequency information (e.g., "daily", "twice daily").',
-            code: 'INCOMPLETE_MEDICATION_INFO'
+            message:
+              'Medication entry may be missing frequency information (e.g., "daily", "twice daily").',
+            code: 'INCOMPLETE_MEDICATION_INFO',
           });
         }
       }
@@ -805,25 +915,34 @@ Annual physical exam
   private validateDateFormats(line: string, lineNumber: number, errors: any[]) {
     // Check for various date formats and flag inconsistencies
     const datePatterns = [
-      /\b\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\b/g,  // MM/DD/YYYY or MM-DD-YYYY
-      /\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b/g,    // YYYY-MM-DD
-      /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},?\s+\d{4}\b/gi // Jan 1, 2023
+      /\b\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\b/g, // MM/DD/YYYY or MM-DD-YYYY
+      /\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b/g, // YYYY-MM-DD
+      /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},?\s+\d{4}\b/gi, // Jan 1, 2023
     ];
-    
+
     datePatterns.forEach(pattern => {
       let match;
       while ((match = pattern.exec(line)) !== null) {
         const dateStr = match[0];
         const startColumn = match.index + 1;
         const endColumn = startColumn + dateStr.length;
-        
+
         // Check for obviously invalid dates
-        if (dateStr.includes('00-00') || dateStr.includes('/00/') || dateStr.includes('-00-')) {
+        if (
+          dateStr.includes('00-00') ||
+          dateStr.includes('/00/') ||
+          dateStr.includes('-00-')
+        ) {
           errors.push({
             severity: monaco.MarkerSeverity.Error,
-            range: new monaco.Range(lineNumber, startColumn, lineNumber, endColumn),
+            range: new monaco.Range(
+              lineNumber,
+              startColumn,
+              lineNumber,
+              endColumn
+            ),
             message: `Invalid date: "${dateStr}". Dates cannot contain zero months or days.`,
-            code: 'INVALID_DATE'
+            code: 'INVALID_DATE',
           });
         }
       }
@@ -834,7 +953,7 @@ Annual physical exam
     const lines = content.split('\n');
     let hasPatientSection = false;
     let hasAssessmentSection = false;
-    
+
     lines.forEach((line, _index) => {
       if (line.toLowerCase().includes('## patient')) {
         hasPatientSection = true;
@@ -843,23 +962,25 @@ Annual physical exam
         hasAssessmentSection = true;
       }
     });
-    
+
     // Check for missing critical sections
     if (!hasPatientSection) {
       errors.push({
         severity: monaco.MarkerSeverity.Warning,
         range: new monaco.Range(1, 1, 1, 1),
-        message: 'Document is missing a Patient section (## Patient). This is recommended for medical documentation.',
-        code: 'MISSING_PATIENT_SECTION'
+        message:
+          'Document is missing a Patient section (## Patient). This is recommended for medical documentation.',
+        code: 'MISSING_PATIENT_SECTION',
       });
     }
-    
+
     if (!hasAssessmentSection) {
       errors.push({
         severity: monaco.MarkerSeverity.Info,
         range: new monaco.Range(1, 1, 1, 1),
-        message: 'Document may be missing an Assessment section (## Assessment). This is typically required for medical visits.',
-        code: 'MISSING_ASSESSMENT_SECTION'
+        message:
+          'Document may be missing an Assessment section (## Assessment). This is typically required for medical visits.',
+        code: 'MISSING_ASSESSMENT_SECTION',
       });
     }
   }
@@ -867,60 +988,107 @@ Annual physical exam
   private extractCodesFromContent(content: string): ExtractedCode[] {
     const codes: ExtractedCode[] = [];
     const lines = content.split('\n');
-    
+
     lines.forEach((line, lineIndex) => {
       const lineNumber = lineIndex + 1;
-      
+
       // Extract medical terms that could be coded
       // Look for diabetes-related terms
       const diabetesTerms = [
-        { term: 'Type 2 diabetes mellitus', code: 'E11.9', pattern: /type\s*2\s*diabetes\s*mellitus/i },
-        { term: 'diabetes management', code: 'Z71.3', pattern: /diabetes\s*management/i },
+        {
+          term: 'Type 2 diabetes mellitus',
+          code: 'E11.9',
+          pattern: /type\s*2\s*diabetes\s*mellitus/i,
+        },
+        {
+          term: 'diabetes management',
+          code: 'Z71.3',
+          pattern: /diabetes\s*management/i,
+        },
         { term: 'diabetes', code: 'E11.9', pattern: /\bdiabetes\b/i },
         { term: 'hypoglycemia', code: 'E16.2', pattern: /hypoglycemia/i },
-        { term: 'HbA1c', code: '83036', pattern: /\bhba1c\b/i }
+        { term: 'HbA1c', code: '83036', pattern: /\bhba1c\b/i },
       ];
 
       // Look for hypertension terms
       const hypertensionTerms = [
         { term: 'Hypertension', code: 'I10', pattern: /\bhypertension\b/i },
-        { term: 'well controlled hypertension', code: 'I10', pattern: /well\s*controlled.*hypertension/i }
+        {
+          term: 'well controlled hypertension',
+          code: 'I10',
+          pattern: /well\s*controlled.*hypertension/i,
+        },
       ];
 
       // Look for heart-related terms
       const heartTerms = [
         { term: 'CHF', code: 'I50.9', pattern: /\bchf\b/i },
-        { term: 'Congestive heart failure', code: 'I50.9', pattern: /congestive\s*heart\s*failure/i },
-        { term: 'Atrial fibrillation', code: 'I48.91', pattern: /atrial\s*fibrillation/i },
+        {
+          term: 'Congestive heart failure',
+          code: 'I50.9',
+          pattern: /congestive\s*heart\s*failure/i,
+        },
+        {
+          term: 'Atrial fibrillation',
+          code: 'I48.91',
+          pattern: /atrial\s*fibrillation/i,
+        },
         { term: 'chest pain', code: 'R06.02', pattern: /chest\s*pain/i },
-        { term: 'shortness of breath', code: 'R06.00', pattern: /shortness\s*of\s*breath/i }
+        {
+          term: 'shortness of breath',
+          code: 'R06.00',
+          pattern: /shortness\s*of\s*breath/i,
+        },
       ];
 
       // Look for medication terms (RxNorm codes)
       const medicationTerms = [
         { term: 'metformin', code: '6809', pattern: /\bmetformin\b/i },
-        { term: 'insulin glargine', code: '274783', pattern: /insulin\s*glargine/i },
-        { term: 'lisinopril', code: '29046', pattern: /\blisinopril\b/i }
+        {
+          term: 'insulin glargine',
+          code: '274783',
+          pattern: /insulin\s*glargine/i,
+        },
+        { term: 'lisinopril', code: '29046', pattern: /\blisinopril\b/i },
       ];
 
       // Look for allergy terms
       const allergyTerms = [
-        { term: 'PENICILLINS', code: 'N0000007624', pattern: /\bpenicillins?\b/i },
-        { term: 'SULFONAMIDES', code: 'N0000007508', pattern: /\bsulfonamides?\b/i }
+        {
+          term: 'PENICILLINS',
+          code: 'N0000007624',
+          pattern: /\bpenicillins?\b/i,
+        },
+        {
+          term: 'SULFONAMIDES',
+          code: 'N0000007508',
+          pattern: /\bsulfonamides?\b/i,
+        },
       ];
 
-      const allTerms = [...diabetesTerms, ...hypertensionTerms, ...heartTerms, ...medicationTerms, ...allergyTerms];
+      const allTerms = [
+        ...diabetesTerms,
+        ...hypertensionTerms,
+        ...heartTerms,
+        ...medicationTerms,
+        ...allergyTerms,
+      ];
 
       allTerms.forEach(termData => {
         const match = line.match(termData.pattern);
         if (match) {
           const startColumn = match.index! + 1;
           const endColumn = startColumn + match[0].length;
-          
+
           codes.push({
             term: termData.term,
             code: termData.code,
-            range: new monaco.Range(lineNumber, startColumn, lineNumber, endColumn)
+            range: new monaco.Range(
+              lineNumber,
+              startColumn,
+              lineNumber,
+              endColumn
+            ),
           });
         }
       });
@@ -935,7 +1103,9 @@ Annual physical exam
 
     // Extract from visit header - pattern: RE: Johnson, Robert 01-15-1975
     const firstLine = lines[0];
-    const patientMatch = firstLine.match(/RE:\s*([^,]+),\s*([^\s]+)\s*([\d-]+)/i);
+    const patientMatch = firstLine.match(
+      /RE:\s*([^,]+),\s*([^\s]+)\s*([\d-]+)/i
+    );
     if (patientMatch) {
       patient.surname = patientMatch[1].trim();
       patient.name = patientMatch[2].trim();
@@ -945,7 +1115,7 @@ Annual physical exam
     // Extract from Patient section
     lines.forEach(line => {
       const trimmedLine = line.trim();
-      
+
       // Extract Name
       const nameMatch = trimmedLine.match(/^Name:\s*(.+)$/i);
       if (nameMatch) {
@@ -984,7 +1154,7 @@ Annual physical exam
   private updateMetadataPanel() {
     const currentUri = this.model.uri.toString();
     const content = this.model.getValue();
-    
+
     // Extract codes directly from content until LSP server is connected
     const codes = this.extractCodesFromContent(content);
     const diagnostics = this.diagnostics.get(currentUri) || [];
@@ -1004,48 +1174,55 @@ Annual physical exam
     const documentStructure = document.getElementById('document-structure');
     if (documentStructure) {
       const content = this.model.getValue();
-      const structure = this.buildDocumentStructure(content, codes, diagnostics, patient);
+      const structure = this.buildDocumentStructure(
+        content,
+        codes,
+        diagnostics,
+        patient
+      );
       documentStructure.innerHTML = structure;
 
       // Add click handlers for navigation
       // Handle heading clicks
       documentStructure.querySelectorAll('.toc-heading').forEach(header => {
-        header.addEventListener('click', (e) => {
+        header.addEventListener('click', e => {
           const lineStr = (e.currentTarget as HTMLElement).dataset.line;
           if (lineStr) {
             const line = parseInt(lineStr);
-            
+
             // Get the line content to determine selection range
             const model = this.editor.getModel();
             if (model) {
               const lineContent = model.getLineContent(line);
               const headingMatch = lineContent.match(/^(#+)\s*(.+)$/);
-              
+
               if (headingMatch) {
                 const headingPrefix = headingMatch[1] + ' '; // "## " or "# " etc.
                 const startColumn = headingPrefix.length + 1; // Start after "## "
                 const endColumn = lineContent.length + 1; // End of line
-                
+
                 // Select the heading text (without the # markers)
                 this.editor.setSelection({
                   startLineNumber: line,
                   startColumn: startColumn,
                   endLineNumber: line,
-                  endColumn: endColumn
+                  endColumn: endColumn,
                 });
               } else {
                 // Fallback: select entire line if not a standard heading
                 const fallbackModel = this.editor.getModel();
-                const endCol = fallbackModel ? fallbackModel.getLineContent(line).length + 1 : 1;
+                const endCol = fallbackModel
+                  ? fallbackModel.getLineContent(line).length + 1
+                  : 1;
                 this.editor.setSelection({
                   startLineNumber: line,
                   startColumn: 1,
                   endLineNumber: line,
-                  endColumn: endCol
+                  endColumn: endCol,
                 });
               }
             }
-            
+
             this.editor.revealLineInCenter(line);
             this.editor.focus();
           }
@@ -1054,21 +1231,24 @@ Annual physical exam
 
       // Handle code item clicks
       documentStructure.querySelectorAll('.code-item').forEach(codeItem => {
-        codeItem.addEventListener('click', (e) => {
+        codeItem.addEventListener('click', e => {
           const lineStr = (e.currentTarget as HTMLElement).dataset.line;
           const columnStr = (e.currentTarget as HTMLElement).dataset.column;
-          const endColumnStr = (e.currentTarget as HTMLElement).dataset.endColumn;
+          const endColumnStr = (e.currentTarget as HTMLElement).dataset
+            .endColumn;
           if (lineStr && columnStr) {
             const line = parseInt(lineStr);
             const startColumn = parseInt(columnStr);
-            const endColumn = endColumnStr ? parseInt(endColumnStr) : startColumn;
-            
+            const endColumn = endColumnStr
+              ? parseInt(endColumnStr)
+              : startColumn;
+
             // Set selection range to highlight the medical term
             this.editor.setSelection({
               startLineNumber: line,
               startColumn: startColumn,
               endLineNumber: line,
-              endColumn: endColumn
+              endColumn: endColumn,
             });
             this.editor.revealLineInCenter(line);
             this.editor.focus();
@@ -1077,57 +1257,74 @@ Annual physical exam
       });
 
       // Handle patient info clicks
-      documentStructure.querySelectorAll('.patient-name, .patient-meta').forEach(patientElement => {
-        patientElement.addEventListener('click', (e) => {
-          // Find the patient section line (the heading that contains this patient info)
-          const tocSection = (e.currentTarget as HTMLElement).closest('.toc-section');
-          const tocHeading = tocSection?.querySelector('.toc-heading');
-          const lineStr = tocHeading?.getAttribute('data-line');
-          
-          if (lineStr) {
-            const line = parseInt(lineStr);
-            
-            // Navigate to the patient section and select the content
-            const model = this.editor.getModel();
-            if (model) {
-              // Find patient data in the section (look for typical patient info patterns)
-              let foundPatientData = false;
-              const totalLines = model.getLineCount();
-              
-              for (let i = line + 1; i <= Math.min(line + 20, totalLines); i++) {
-                const lineContent = model.getLineContent(i);
-                // Look for patient info patterns like "Name:", "DOB:", etc.
-                if (lineContent.match(/\b(name|dob|date of birth|mrn|gender|age)\b/i)) {
-                  this.editor.setSelection({
-                    startLineNumber: i,
-                    startColumn: 1,
-                    endLineNumber: i,
-                    endColumn: lineContent.length + 1
-                  });
-                  this.editor.revealLineInCenter(i);
-                  foundPatientData = true;
-                  break;
+      documentStructure
+        .querySelectorAll('.patient-name, .patient-meta')
+        .forEach(patientElement => {
+          patientElement.addEventListener('click', e => {
+            // Find the patient section line (the heading that contains this patient info)
+            const tocSection = (e.currentTarget as HTMLElement).closest(
+              '.toc-section'
+            );
+            const tocHeading = tocSection?.querySelector('.toc-heading');
+            const lineStr = tocHeading?.getAttribute('data-line');
+
+            if (lineStr) {
+              const line = parseInt(lineStr);
+
+              // Navigate to the patient section and select the content
+              const model = this.editor.getModel();
+              if (model) {
+                // Find patient data in the section (look for typical patient info patterns)
+                let foundPatientData = false;
+                const totalLines = model.getLineCount();
+
+                for (
+                  let i = line + 1;
+                  i <= Math.min(line + 20, totalLines);
+                  i++
+                ) {
+                  const lineContent = model.getLineContent(i);
+                  // Look for patient info patterns like "Name:", "DOB:", etc.
+                  if (
+                    lineContent.match(
+                      /\b(name|dob|date of birth|mrn|gender|age)\b/i
+                    )
+                  ) {
+                    this.editor.setSelection({
+                      startLineNumber: i,
+                      startColumn: 1,
+                      endLineNumber: i,
+                      endColumn: lineContent.length + 1,
+                    });
+                    this.editor.revealLineInCenter(i);
+                    foundPatientData = true;
+                    break;
+                  }
+                }
+
+                // Fallback: just go to the section heading
+                if (!foundPatientData) {
+                  this.editor.setPosition({ lineNumber: line, column: 1 });
+                  this.editor.revealLineInCenter(line);
                 }
               }
-              
-              // Fallback: just go to the section heading
-              if (!foundPatientData) {
-                this.editor.setPosition({ lineNumber: line, column: 1 });
-                this.editor.revealLineInCenter(line);
-              }
+
+              this.editor.focus();
             }
-            
-            this.editor.focus();
-          }
+          });
         });
-      });
     }
 
     // Update section summary
     this.updateSectionSummary();
   }
 
-  private buildDocumentStructure(content: string, codes: ExtractedCode[], diagnostics: any[], patient: any): string {
+  private buildDocumentStructure(
+    content: string,
+    codes: ExtractedCode[],
+    diagnostics: any[],
+    patient: any
+  ): string {
     const lines = content.split('\n');
     const sections: Array<{
       level: number;
@@ -1146,7 +1343,12 @@ Annual physical exam
         const match = trimmed.match(/^(#+)\s*(.+)/);
         if (match) {
           const level = match[1].length;
-          const title = match[2].trim().replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c] || c));
+          const title = match[2]
+            .trim()
+            .replace(
+              /[<>&]/g,
+              c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[c] || c
+            );
           headings.push({ level, line: index + 1, title });
         }
       }
@@ -1155,27 +1357,36 @@ Annual physical exam
     // Build sections with proper code association - only direct children
     headings.forEach(heading => {
       // Find the next heading at the same level or higher (lower level number)
-      const nextSameLevelIndex = headings.findIndex(h => h.line > heading.line && h.level <= heading.level);
-      
-      // Find the next heading at any deeper level (higher level number) 
-      const nextDeeperLevelIndex = headings.findIndex(h => h.line > heading.line && h.level > heading.level);
-      
+      const nextSameLevelIndex = headings.findIndex(
+        h => h.line > heading.line && h.level <= heading.level
+      );
+
+      // Find the next heading at any deeper level (higher level number)
+      const nextDeeperLevelIndex = headings.findIndex(
+        h => h.line > heading.line && h.level > heading.level
+      );
+
       // Section ends at the next deeper heading OR next same/higher level heading
       let sectionEnd = lines.length;
-      if (nextDeeperLevelIndex >= 0 && (nextSameLevelIndex < 0 || headings[nextDeeperLevelIndex].line < headings[nextSameLevelIndex].line)) {
+      if (
+        nextDeeperLevelIndex >= 0 &&
+        (nextSameLevelIndex < 0 ||
+          headings[nextDeeperLevelIndex].line <
+            headings[nextSameLevelIndex].line)
+      ) {
         // There's a deeper level heading before any same-level heading
         sectionEnd = headings[nextDeeperLevelIndex].line - 1;
       } else if (nextSameLevelIndex >= 0) {
         // There's a same/higher level heading
         sectionEnd = headings[nextSameLevelIndex].line - 1;
       }
-      
+
       // Find codes that belong directly to this section (not in subsections)
       const sectionCodes = codes.filter(code => {
         const codeLine = code.range.startLineNumber;
         return codeLine > heading.line && codeLine <= sectionEnd;
       });
-      
+
       // Find diagnostics that belong directly to this section
       const sectionDiagnostics = diagnostics.filter(diag => {
         const diagLine = diag.range?.startLineNumber || 0;
@@ -1184,14 +1395,14 @@ Annual physical exam
 
       // Check if this is a patient section
       const isPatientSection = heading.title.toLowerCase().includes('patient');
-      
+
       sections.push({
         level: heading.level,
         title: heading.title,
         line: heading.line,
         codes: sectionCodes,
         diagnostics: sectionDiagnostics,
-        patient: isPatientSection ? patient : undefined
+        patient: isPatientSection ? patient : undefined,
       });
     });
 
@@ -1199,41 +1410,56 @@ Annual physical exam
       return '<div class="empty-state">No document structure detected</div>';
     }
 
-    return sections.map(section => {
-      const badges = [];
-      if (section.codes.length > 0) badges.push(`<span class="section-badge">${section.codes.length} codes</span>`);
-      if (section.diagnostics.length > 0) badges.push(`<span class="section-badge" style="background: rgba(255,68,68,0.2); color: #ff4444;">${section.diagnostics.length} issues</span>`);
-      if (section.patient) badges.push(`<span class="section-badge" style="background: rgba(0,200,100,0.2); color: #00c864;">patient</span>`);
+    return sections
+      .map(section => {
+        const badges = [];
+        if (section.codes.length > 0)
+          badges.push(
+            `<span class="section-badge">${section.codes.length} codes</span>`
+          );
+        if (section.diagnostics.length > 0)
+          badges.push(
+            `<span class="section-badge" style="background: rgba(255,68,68,0.2); color: #ff4444;">${section.diagnostics.length} issues</span>`
+          );
+        if (section.patient)
+          badges.push(
+            `<span class="section-badge" style="background: rgba(0,200,100,0.2); color: #00c864;">patient</span>`
+          );
 
-      let sectionContent = '';
-      
-      // Add patient details if this is a patient section
-      if (section.patient) {
-        const patientName = `${section.patient.name || ''} ${section.patient.surname || ''}`.trim() || '';
-        const nameDisplay = patientName || '[No Name]';
-        const dobDisplay = section.patient.dob || '[No DOB]';
-        const sexDisplay = section.patient.gender || '[No Sex]';
+        let sectionContent = '';
 
-        sectionContent += `
+        // Add patient details if this is a patient section
+        if (section.patient) {
+          const patientName =
+            `${section.patient.name || ''} ${section.patient.surname || ''}`.trim() ||
+            '';
+          const nameDisplay = patientName || '[No Name]';
+          const dobDisplay = section.patient.dob || '[No DOB]';
+          const sexDisplay = section.patient.gender || '[No Sex]';
+
+          sectionContent += `
           <div class="patient-details">
             <div class="patient-name">Name: ${nameDisplay}</div>
             <div class="patient-meta">DOB: ${dobDisplay} • Sex: ${sexDisplay}</div>
           </div>
         `;
-      }
+        }
 
-      // Add diagnostics for this section (keep these on the left)
-      if (section.diagnostics.length > 0) {
-        sectionContent += `
+        // Add diagnostics for this section (keep these on the left)
+        if (section.diagnostics.length > 0) {
+          sectionContent += `
           <div class="diagnostics-in-section">
-            ${section.diagnostics.map(diag => 
-              `<div class="diagnostic-item-inline">${diag.message}</div>`
-            ).join('')}
+            ${section.diagnostics
+              .map(
+                diag =>
+                  `<div class="diagnostic-item-inline">${diag.message}</div>`
+              )
+              .join('')}
           </div>
         `;
-      }
+        }
 
-      return `
+        return `
         <div class="toc-section level-${Math.min(section.level, 3)}">
           <div class="toc-heading" data-line="${section.line}">
             <span class="heading-level">H${section.level}</span>
@@ -1243,22 +1469,30 @@ Annual physical exam
             </div>
           </div>
           ${sectionContent ? `<div class="section-content">${sectionContent}</div>` : ''}
-          ${section.codes.length > 0 ? `
+          ${
+            section.codes.length > 0
+              ? `
             <ul class="code-list">
-              ${section.codes.map(code => 
-                `<li class="code-item" 
+              ${section.codes
+                .map(
+                  code =>
+                    `<li class="code-item" 
                      data-line="${code.range.startLineNumber}" 
                      data-column="${code.range.startColumn}" 
                      data-end-column="${code.range.endColumn}">
                   <span class="code-term">${code.term}</span>
                   <span class="code-value">${code.code}</span>
                 </li>`
-              ).join('')}
+                )
+                .join('')}
             </ul>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
       `;
-    }).join('');
+      })
+      .join('');
   }
 
   private updateDiagnosticsPanel(diagnostics: any[]) {
@@ -1266,36 +1500,50 @@ Annual physical exam
     if (!diagnosticsListElement) return;
 
     if (diagnostics.length === 0) {
-      diagnosticsListElement.innerHTML = '<div class="empty-state">No issues detected ✅</div>';
+      diagnosticsListElement.innerHTML =
+        '<div class="empty-state">No issues detected ✅</div>';
       return;
     }
 
     const groupedDiagnostics = {
-      errors: diagnostics.filter(d => d.severity === monaco.MarkerSeverity.Error),
-      warnings: diagnostics.filter(d => d.severity === monaco.MarkerSeverity.Warning),
-      info: diagnostics.filter(d => d.severity === monaco.MarkerSeverity.Info)
+      errors: diagnostics.filter(
+        d => d.severity === monaco.MarkerSeverity.Error
+      ),
+      warnings: diagnostics.filter(
+        d => d.severity === monaco.MarkerSeverity.Warning
+      ),
+      info: diagnostics.filter(d => d.severity === monaco.MarkerSeverity.Info),
     };
 
     let html = '';
-    
+
     if (groupedDiagnostics.errors.length > 0) {
-      html += '<div class="diagnostic-group"><h4 class="diagnostic-group-title error">🚨 Errors (' + groupedDiagnostics.errors.length + ')</h4>';
+      html +=
+        '<div class="diagnostic-group"><h4 class="diagnostic-group-title error">🚨 Errors (' +
+        groupedDiagnostics.errors.length +
+        ')</h4>';
       groupedDiagnostics.errors.forEach(diagnostic => {
         html += this.formatDiagnosticItem(diagnostic, 'error');
       });
       html += '</div>';
     }
-    
+
     if (groupedDiagnostics.warnings.length > 0) {
-      html += '<div class="diagnostic-group"><h4 class="diagnostic-group-title warning">⚠️ Warnings (' + groupedDiagnostics.warnings.length + ')</h4>';
+      html +=
+        '<div class="diagnostic-group"><h4 class="diagnostic-group-title warning">⚠️ Warnings (' +
+        groupedDiagnostics.warnings.length +
+        ')</h4>';
       groupedDiagnostics.warnings.forEach(diagnostic => {
         html += this.formatDiagnosticItem(diagnostic, 'warning');
       });
       html += '</div>';
     }
-    
+
     if (groupedDiagnostics.info.length > 0) {
-      html += '<div class="diagnostic-group"><h4 class="diagnostic-group-title info">ℹ️ Info (' + groupedDiagnostics.info.length + ')</h4>';
+      html +=
+        '<div class="diagnostic-group"><h4 class="diagnostic-group-title info">ℹ️ Info (' +
+        groupedDiagnostics.info.length +
+        ')</h4>';
       groupedDiagnostics.info.forEach(diagnostic => {
         html += this.formatDiagnosticItem(diagnostic, 'info');
       });
@@ -1303,24 +1551,30 @@ Annual physical exam
     }
 
     diagnosticsListElement.innerHTML = html;
-    
+
     // Add click handlers to navigate to errors
-    diagnosticsListElement.querySelectorAll('.diagnostic-item').forEach(item => {
-      item.addEventListener('click', (e) => {
-        const lineNumber = parseInt((e.currentTarget as HTMLElement).dataset.line || '1');
-        const column = parseInt((e.currentTarget as HTMLElement).dataset.column || '1');
-        
-        this.editor.setPosition({ lineNumber, column });
-        this.editor.revealLineInCenter(lineNumber);
-        this.editor.focus();
+    diagnosticsListElement
+      .querySelectorAll('.diagnostic-item')
+      .forEach(item => {
+        item.addEventListener('click', e => {
+          const lineNumber = parseInt(
+            (e.currentTarget as HTMLElement).dataset.line || '1'
+          );
+          const column = parseInt(
+            (e.currentTarget as HTMLElement).dataset.column || '1'
+          );
+
+          this.editor.setPosition({ lineNumber, column });
+          this.editor.revealLineInCenter(lineNumber);
+          this.editor.focus();
+        });
       });
-    });
   }
 
   private formatDiagnosticItem(diagnostic: any, severity: string): string {
     const line = diagnostic.range?.startLineNumber || 1;
     const column = diagnostic.range?.startColumn || 1;
-    
+
     return `
       <div class="diagnostic-item ${severity}" data-line="${line}" data-column="${column}" 
            title="Click to navigate to line ${line}">
@@ -1342,8 +1596,12 @@ Annual physical exam
     const diagnostics = this.diagnostics.get(currentUri) || [];
 
     const codesCount = codes.length;
-    const warningsCount = diagnostics.filter(d => d.severity === monaco.MarkerSeverity.Warning).length;
-    const errorsCount = diagnostics.filter(d => d.severity === monaco.MarkerSeverity.Error).length;
+    const warningsCount = diagnostics.filter(
+      d => d.severity === monaco.MarkerSeverity.Warning
+    ).length;
+    const errorsCount = diagnostics.filter(
+      d => d.severity === monaco.MarkerSeverity.Error
+    ).length;
 
     summaryElement.innerHTML = `
       <div class="summary-item">
@@ -1424,7 +1682,7 @@ Annual physical exam
         // Extract the actual heading text (preserve original case)
         const originalHeading = line.trim().replace(/^#+\s*/, '');
         const headingText = trimmed.replace(/^#+\s*/, '');
-        
+
         // Find matching section
         currentSection = null;
         for (const [key, section] of Object.entries(sectionMappings)) {
@@ -1451,10 +1709,6 @@ Annual physical exam
     // Update metadata panel when sections change
     this.updateMetadataPanel();
   }
-
-
-
-
 
   /**
    * Scroll editor to the specified section

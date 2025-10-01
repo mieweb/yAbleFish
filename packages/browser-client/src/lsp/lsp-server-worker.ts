@@ -18,7 +18,8 @@ class SimpleMedicalTerminology {
 
 let port: MessagePort;
 let terminology: SimpleMedicalTerminology;
-const documents: Map<string, { uri: string; text: string; version: number }> = new Map();
+const documents: Map<string, { uri: string; text: string; version: number }> =
+  new Map();
 
 self.onmessage = (event: MessageEvent) => {
   if (event.data?.type === 'init' && event.data?.port) {
@@ -35,10 +36,10 @@ function setupLSPServer() {
 
   port.onmessage = async (event: MessageEvent) => {
     const request = event.data;
-    
+
     try {
       let response;
-      
+
       switch (request.method) {
         case 'initialize':
           response = {
@@ -47,44 +48,44 @@ function setupLSPServer() {
             result: {
               capabilities: {
                 textDocumentSync: 1, // Full document sync
-                completionProvider: { 
+                completionProvider: {
                   resolveProvider: true,
-                  triggerCharacters: [' ', '.', '-']
+                  triggerCharacters: [' ', '.', '-'],
                 },
-                hoverProvider: true
-              }
-            }
+                hoverProvider: true,
+              },
+            },
           };
           break;
-          
+
         case 'textDocument/didOpen':
           await handleDidOpen(request.params);
           response = null; // No response for notifications
           break;
-          
+
         case 'textDocument/didChange':
           await handleDidChange(request.params);
           response = null; // No response for notifications
           break;
-          
+
         case 'textDocument/completion': {
           const completions = await handleCompletion(request.params);
           response = {
             jsonrpc: '2.0',
             id: request.id,
-            result: completions
+            result: completions,
           };
           break;
         }
-          
+
         default:
           response = {
-            jsonrpc: '2.0', 
+            jsonrpc: '2.0',
             id: request.id,
-            result: null
+            result: null,
           };
       }
-      
+
       if (response) {
         port.postMessage(response);
       }
@@ -95,8 +96,8 @@ function setupLSPServer() {
         id: request.id,
         error: {
           code: -32603,
-          message: error instanceof Error ? error.message : 'Unknown error'
-        }
+          message: error instanceof Error ? error.message : 'Unknown error',
+        },
       };
       port.postMessage(errorResponse);
     }
@@ -110,23 +111,23 @@ async function handleDidOpen(params: any) {
   documents.set(textDocument.uri, {
     uri: textDocument.uri,
     text: textDocument.text,
-    version: textDocument.version
+    version: textDocument.version,
   });
-  
+
   await validateDocument(textDocument.uri, textDocument.text);
 }
 
 async function handleDidChange(params: any) {
   const { textDocument, contentChanges } = params;
-  
+
   if (contentChanges.length > 0) {
     const change = contentChanges[0];
     documents.set(textDocument.uri, {
       uri: textDocument.uri,
       text: change.text,
-      version: textDocument.version
+      version: textDocument.version,
     });
-    
+
     await validateDocument(textDocument.uri, change.text);
   }
 }
@@ -135,17 +136,17 @@ async function validateDocument(uri: string, text: string) {
   try {
     // Create comprehensive diagnostics using enhanced validation
     const diagnostics = createEnhancedDiagnostics(text);
-    
+
     // Send diagnostics notification to client
     const notification = {
       jsonrpc: '2.0',
       method: 'textDocument/publishDiagnostics',
       params: {
         uri: uri,
-        diagnostics: diagnostics
-      }
+        diagnostics: diagnostics,
+      },
     };
-    
+
     port.postMessage(notification);
   } catch (error) {
     console.error('Validation error:', error);
@@ -155,7 +156,7 @@ async function validateDocument(uri: string, text: string) {
 function createEnhancedDiagnostics(text: string): any[] {
   const diagnostics: any[] = [];
   const lines = text.split('\\n');
-  
+
   lines.forEach((line, lineIndex) => {
     // Check for invalid section headers
     if (line.trim().startsWith('#')) {
@@ -163,45 +164,49 @@ function createEnhancedDiagnostics(text: string): any[] {
       if (headerMatch) {
         const level = headerMatch[1].length;
         const title = headerMatch[2].trim();
-        
+
         // Check for invalid header levels
         if (level > 3) {
           diagnostics.push({
             severity: 2, // Warning
             range: {
               start: { line: lineIndex, character: 0 },
-              end: { line: lineIndex, character: line.length }
+              end: { line: lineIndex, character: line.length },
             },
             message: `Header level ${level} is too deep. Maximum recommended level is 3.`,
             code: 'INVALID_HEADER_LEVEL',
-            source: 'yAbelFish LSP'
+            source: 'yAbelFish LSP',
           });
         }
-        
+
         // Check for empty headers
         if (!title) {
           diagnostics.push({
             severity: 1, // Error
             range: {
               start: { line: lineIndex, character: 0 },
-              end: { line: lineIndex, character: line.length }
+              end: { line: lineIndex, character: line.length },
             },
             message: 'Empty header detected. Headers must have content.',
             code: 'EMPTY_HEADER',
-            source: 'yAbelFish LSP'
+            source: 'yAbelFish LSP',
           });
         }
       }
     }
-    
+
     // Check for invalid medical codes
     validateMedicalCodesInLine(line, lineIndex, diagnostics);
   });
-  
+
   return diagnostics;
 }
 
-function validateMedicalCodesInLine(line: string, lineIndex: number, diagnostics: any[]) {
+function validateMedicalCodesInLine(
+  line: string,
+  lineIndex: number,
+  diagnostics: any[]
+) {
   // Check for invalid ICD-10 codes
   const icd10Pattern = /\\b[A-Z]\\d{2}(\\.\\d+)?\\b/g;
   let match;
@@ -209,18 +214,18 @@ function validateMedicalCodesInLine(line: string, lineIndex: number, diagnostics
     const code = match[0];
     const startChar = match.index;
     const endChar = startChar + code.length;
-    
+
     // Validate ICD-10 format
     if (!/^[A-Z]\\d{2}(\\.\\d{1,2})?$/.test(code)) {
       diagnostics.push({
         severity: 1, // Error
         range: {
           start: { line: lineIndex, character: startChar },
-          end: { line: lineIndex, character: endChar }
+          end: { line: lineIndex, character: endChar },
         },
         message: `Invalid ICD-10 code format: "${code}". Expected format: A12 or A12.34`,
         code: 'INVALID_ICD10_FORMAT',
-        source: 'yAbelFish LSP'
+        source: 'yAbelFish LSP',
       });
     } else {
       // Check if it's a known code
@@ -230,11 +235,11 @@ function validateMedicalCodesInLine(line: string, lineIndex: number, diagnostics
           severity: 3, // Information
           range: {
             start: { line: lineIndex, character: startChar },
-            end: { line: lineIndex, character: endChar }
+            end: { line: lineIndex, character: endChar },
           },
           message: `Unknown ICD-10 code: "${code}". Please verify this is a valid medical code.`,
           code: 'UNKNOWN_ICD10_CODE',
-          source: 'yAbelFish LSP'
+          source: 'yAbelFish LSP',
         });
       }
     }
