@@ -1,6 +1,6 @@
 # yAbelFish
 
-DNS: yabelfish.com
+DNS: yabelfish.com like [Babel fish](docs/babelfish.md)
 
 A Language Server Protocol (LSP) server designed for medical documentation using the yAbel format. yAbel is a lightweight, human-readable text format that combines the best of **Markdown** and **YAML** - but without being strict about either. This flexible approach allows clinicians to write natural, flowing medical notes while still maintaining enough structure for software to parse and analyze.
 
