@@ -1,12 +1,12 @@
-# yAbelFish
+# yabelFish
 
 DNS: yabelfish.com like [Babel fish](docs/babelfish.md)
 
-A Language Server Protocol (LSP) server designed for medical documentation using the yAbel format. yAbel is a lightweight, human-readable text format that combines the best of **Markdown** and **YAML** - but without being strict about either. This flexible approach allows clinicians to write natural, flowing medical notes while still maintaining enough structure for software to parse and analyze.
+A Language Server Protocol (LSP) server designed for medical documentation using the yabel format. yabel is a lightweight, human-readable text format that combines the best of **Markdown** and **YAML** - but without being strict about either. This flexible approach allows clinicians to write natural, flowing medical notes while still maintaining enough structure for software to parse and analyze.
 
-## 📝 What is yAbel?
+## 📝 What is yabel?
 
-yAbel is designed to be:
+yabel is designed to be:
 - **Markdown-inspired** for natural text flow and readability
 - **YAML-influenced** for structured data when needed (see [example](https://www.bairesdev.com/tools/json2yaml/) for yaml and json)
 - **Forgiving and flexible** - not strict about syntax rules
@@ -15,7 +15,7 @@ yAbel is designed to be:
 
 Think of it as "Markdown with hints of YAML" where you can write naturally but add structure when it helps.
 
-See: [yCard](https://github.com/mieweb/yCard) for more details on the yAbel format.
+See: [yCard](https://github.com/mieweb/yCard) for more details on the yabel format.
 There are several standards coming including:
 - yVisit
 - yMedication
@@ -25,7 +25,7 @@ There are several standards coming including:
 - yOrder
 - yCard can be used for other domains as well but also yPatient, yPractitioner, yOrganization, etc.
 
-yAbelFish is a web-based editor that leverages the Monaco Editor (the core of VS Code) and runs entirely in the browser using a Web Worker to host the LSP server. This means no backend is required, and all processing happens locally in the user's browser.
+yabelFish is a web-based editor that leverages the Monaco Editor (the core of VS Code) and runs entirely in the browser using a Web Worker to host the LSP server. This means no backend is required, and all processing happens locally in the user's browser.
 
 ## Examples
 
@@ -33,7 +33,7 @@ yAbelFish is a web-based editor that leverages the Monaco Editor (the core of VS
 
 ### Obsolescence
 
-We ultimately hope this tool becomes [obsolete](https://www.youtube.com/shorts/EjMEPLe1NC8)—superseded by ambient clinical intelligence where structured codes settle as a thin archaeological layer in the history of health tech. Until that future arrives, yAbelFish exists to make producing accurate, semi‑structured medical notes faster, safer, and less frustrating.
+We ultimately hope this tool becomes [obsolete](https://www.youtube.com/shorts/EjMEPLe1NC8)—superseded by ambient clinical intelligence where structured codes settle as a thin archaeological layer in the history of health tech. Until that future arrives, yabelFish exists to make producing accurate, semi‑structured medical notes faster, safer, and less frustrating.
 
 As [AR-assisted](https://youtu.be/EprwyLnDUFw) workflows (e.g. [Ozwell](https://ozwell.ai)-style AR glasses) and vector‑DB powered [WebChart](https://www.webchartnow.com) mature, real‑time semantic capture may remove the need for standalone LSP editors entirely. When that day comes, today’s manual coding friction—and the [moral injury](https://youtu.be/L_1PNZdHq6Q) caused by [poor UX](https://youtu.be/xB_tSFJsjsw?si=AjO-gL1l-bU-LmKh)—will just be another stratum of sediment. In the meantime, we focus on pragmatic tooling that helps clinicians now while paving a path toward that ambient, unobtrusive future.
 
@@ -135,7 +135,7 @@ graph TB
 - **Language**: TypeScript
 - **LSP Framework**: vscode-languageserver (universal)
 - **Medical Data**: RxNorm, SNOMED-CT, ICD-10 terminology
-- **Parser**: Custom yAbel format parser
+- **Parser**: Custom yabel format parser
 
 ### Browser Client
 - **Frontend**: TypeScript + Vite
@@ -147,7 +147,7 @@ graph TB
 ### VS Code Extension
 - **Extension API**: VS Code Extension API
 - **LSP Client**: vscode-languageclient
-- **Language Support**: Custom yAbel language definition
+- **Language Support**: Custom yabel language definition
 
 ### Web Server
 - **Runtime**: Node.js
@@ -179,7 +179,7 @@ graph TB
 ### ✨ What's Working Now
 
 ✅ **Phase 1 & 2 Complete!** 
-- ✅ **yAbel Parser**: Intelligent parsing of medical documentation with section detection
+- ✅ **yabel Parser**: Intelligent parsing of medical documentation with section detection
 - ✅ **ICD-10 Terminology**: Sample medical code database with 15+ common conditions & medications
 - ✅ **Smart Completions**: Context-aware suggestions based on current section (medications, allergies, etc.)
 - ✅ **Real-time Validation**: Example Allergy conflict detection (e.g., penicillin allergy vs amoxicillin prescription)
@@ -205,7 +205,7 @@ yabelFish/
 │   │   ├── src/
 │   │   │   ├── server.ts         # Main LSP server implementation
 │   │   │   ├── medical/          # Medical terminology & validation
-│   │   │   ├── parser/           # yAbel format parser
+│   │   │   ├── parser/           # yabel format parser
 │   │   │   └── capabilities/     # LSP feature implementations
 │   │   ├── package.json
 │   │   └── tsconfig.json
@@ -238,7 +238,7 @@ yabelFish/
 │
 ├── 🧪 test-environments/
 │   ├── kerberon-integration/     # Kerberon testing setup
-│   │   ├── samples/              # Sample yAbel documents
+│   │   ├── samples/              # Sample yabel documents
 │   │   ├── test-cases/           # Kerberon test scenarios
 │   │   ├── kerberon.config.json  # Kerberon configuration
 │   │   └── README.md             # Testing instructions
@@ -248,7 +248,7 @@ yabelFish/
 │
 ├── 📚 docs/
 │   ├── architecture.md           # System architecture
-│   ├── yabel-format.md           # yAbel format specification
+│   ├── yabel-format.md           # yabel format specification
 │   ├── deployment.md             # Deployment guides
 │   └── api/                      # API documentation
 │
@@ -320,7 +320,7 @@ Modify styles in `index.html` or add new sections by updating the tab structure 
 ## 🚧 Roadmap
 
 ### Phase 1: Core LSP Foundation 🏗️
-- [x] **Tree-sitter WASM Parser** - ✅ Custom yAbel parser implemented with section detection
+- [x] **Tree-sitter WASM Parser** - ✅ Custom yabel parser implemented with section detection
 - [x] **ICD-10 Focus** - ✅ Comprehensive ICD-10 condition codes integration
   - [x] Code normalization for known conditions
   - [x] Warnings for unknown/invalid condition codes
