@@ -199,7 +199,7 @@ graph TB
 ## 🔧 Project Structure
 
 ```
-yAbleFish/
+yabelFish/
 ├── 📦 packages/
 │   ├── lsp-server/               # Core LSP server (universal)
 │   │   ├── src/
