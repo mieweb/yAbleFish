@@ -47,21 +47,26 @@ export class DiagnosticsProvider {
       diagnostics.push(...patientValidation);
 
       // Validate medication formats
-      const medicationValidation = this.validateMedicationFormats(text, document);
+      const medicationValidation = this.validateMedicationFormats(
+        text,
+        document
+      );
       diagnostics.push(...medicationValidation);
 
       // Validate date formats
       const dateValidation = this.validateDateFormats(text, document);
       diagnostics.push(...dateValidation);
-
     } catch (error) {
       // If parsing completely fails, report a critical error
       diagnostics.push({
         severity: DiagnosticSeverity.Error,
-        range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
+        range: {
+          start: { line: 0, character: 0 },
+          end: { line: 0, character: 0 },
+        },
         message: `Failed to parse document: ${error instanceof Error ? error.message : 'Unknown parsing error'}`,
         code: 'PARSE_FAILURE',
-        source: 'yAbelFish'
+        source: 'yAbelFish',
       });
     }
 
@@ -71,76 +76,95 @@ export class DiagnosticsProvider {
   /**
    * Validate document structure and detect unparsable sections
    */
-  private validateDocumentStructure(text: string, document: TextDocument): Diagnostic[] {
+  private validateDocumentStructure(
+    text: string,
+    document: TextDocument
+  ): Diagnostic[] {
     const diagnostics: Diagnostic[] = [];
     const lines = text.split('\n');
-    
+
     let hasPatientSection = false;
     let hasAssessmentSection = false;
-    
+
     lines.forEach((line, lineIndex) => {
       const lineNumber = lineIndex;
-      
+
       // Check for invalid section headers
       if (line.trim().startsWith('#')) {
         const headerMatch = line.match(/^(#+)\s*(.*)$/);
         if (headerMatch) {
           const level = headerMatch[1].length;
           const title = headerMatch[2].trim();
-          
+
           // Check for invalid header levels (more than 3 #)
           if (level > 3) {
             diagnostics.push({
               severity: DiagnosticSeverity.Warning,
               range: {
                 start: { line: lineNumber, character: 0 },
-                end: { line: lineNumber, character: line.length }
+                end: { line: lineNumber, character: line.length },
               },
               message: `Header level ${level} is too deep. Maximum recommended level is 3 for medical documentation.`,
               code: 'INVALID_HEADER_LEVEL',
-              source: 'yAbelFish'
+              source: 'yAbelFish',
             });
           }
-          
+
           // Check for empty headers
           if (!title) {
             diagnostics.push({
               severity: DiagnosticSeverity.Error,
               range: {
                 start: { line: lineNumber, character: 0 },
-                end: { line: lineNumber, character: line.length }
+                end: { line: lineNumber, character: line.length },
               },
-              message: 'Empty header detected. Headers must have descriptive content.',
+              message:
+                'Empty header detected. Headers must have descriptive content.',
               code: 'EMPTY_HEADER',
-              source: 'yAbelFish'
+              source: 'yAbelFish',
             });
           }
-          
+
           // Track standard medical sections
           const lowerTitle = title.toLowerCase();
           if (level === 2) {
             if (lowerTitle.includes('patient')) hasPatientSection = true;
             if (lowerTitle.includes('assessment')) hasAssessmentSection = true;
-            
+
             // Check for non-standard section headers
             const validSections = [
-              'patient', 'chief complaint', 'hpi', 'history of present illness',
-              'allergies', 'allergies and intolerances', 'medications', 'meds',
-              'assessment', 'plan', 'review of systems', 'ros', 'physical exam',
-              'physical examination', 'vitals', 'vital signs', 'social history',
-              'family history', 'past medical history', 'pmh'
+              'patient',
+              'chief complaint',
+              'hpi',
+              'history of present illness',
+              'allergies',
+              'allergies and intolerances',
+              'medications',
+              'meds',
+              'assessment',
+              'plan',
+              'review of systems',
+              'ros',
+              'physical exam',
+              'physical examination',
+              'vitals',
+              'vital signs',
+              'social history',
+              'family history',
+              'past medical history',
+              'pmh',
             ];
-            
+
             if (!validSections.some(section => lowerTitle.includes(section))) {
               diagnostics.push({
                 severity: DiagnosticSeverity.Information,
                 range: {
                   start: { line: lineNumber, character: level + 1 },
-                  end: { line: lineNumber, character: line.length }
+                  end: { line: lineNumber, character: line.length },
                 },
                 message: `Non-standard section header: "${title}". Consider using standard medical documentation sections.`,
                 code: 'NON_STANDARD_SECTION',
-                source: 'yAbelFish'
+                source: 'yAbelFish',
               });
             }
           }
@@ -150,47 +174,61 @@ export class DiagnosticsProvider {
             severity: DiagnosticSeverity.Error,
             range: {
               start: { line: lineNumber, character: 0 },
-              end: { line: lineNumber, character: line.length }
+              end: { line: lineNumber, character: line.length },
             },
-            message: 'Malformed header syntax. Headers should follow markdown format: # Title',
+            message:
+              'Malformed header syntax. Headers should follow markdown format: # Title',
             code: 'MALFORMED_HEADER',
-            source: 'yAbelFish'
+            source: 'yAbelFish',
           });
         }
       }
-      
+
       // Check for unparsable medical code formats
       this.validateMedicalCodesInLine(line, lineNumber, document, diagnostics);
     });
-    
+
     // Check for missing critical sections
     if (!hasPatientSection) {
       diagnostics.push({
         severity: DiagnosticSeverity.Warning,
-        range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
-        message: 'Document is missing a Patient section (## Patient). This is required for complete medical documentation.',
+        range: {
+          start: { line: 0, character: 0 },
+          end: { line: 0, character: 0 },
+        },
+        message:
+          'Document is missing a Patient section (## Patient). This is required for complete medical documentation.',
         code: 'MISSING_PATIENT_SECTION',
-        source: 'yAbelFish'
+        source: 'yAbelFish',
       });
     }
-    
+
     if (!hasAssessmentSection) {
       diagnostics.push({
         severity: DiagnosticSeverity.Information,
-        range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
-        message: 'Document may be missing an Assessment section (## Assessment). This is typically required for medical visits.',
+        range: {
+          start: { line: 0, character: 0 },
+          end: { line: 0, character: 0 },
+        },
+        message:
+          'Document may be missing an Assessment section (## Assessment). This is typically required for medical visits.',
         code: 'MISSING_ASSESSMENT_SECTION',
-        source: 'yAbelFish'
+        source: 'yAbelFish',
       });
     }
-    
+
     return diagnostics;
   }
 
   /**
    * Validate medical codes within a specific line
    */
-  private validateMedicalCodesInLine(line: string, lineNumber: number, document: TextDocument, diagnostics: Diagnostic[]) {
+  private validateMedicalCodesInLine(
+    line: string,
+    lineNumber: number,
+    document: TextDocument,
+    diagnostics: Diagnostic[]
+  ) {
     // Check for invalid ICD-10 codes
     const icd10Pattern = /\b[A-Z]\d{2}(\.\d+)?\b/g;
     let match;
@@ -198,18 +236,18 @@ export class DiagnosticsProvider {
       const code = match[0];
       const startChar = match.index;
       const endChar = startChar + code.length;
-      
+
       // Validate ICD-10 format more strictly
       if (!/^[A-Z]\d{2}(\.\d{1,2})?$/.test(code)) {
         diagnostics.push({
           severity: DiagnosticSeverity.Error,
           range: {
             start: { line: lineNumber, character: startChar },
-            end: { line: lineNumber, character: endChar }
+            end: { line: lineNumber, character: endChar },
           },
           message: `Invalid ICD-10 code format: "${code}". Expected format: A12 or A12.34`,
           code: 'INVALID_ICD10_FORMAT',
-          source: 'yAbelFish'
+          source: 'yAbelFish',
         });
       } else {
         // Check if it's a known code
@@ -219,34 +257,34 @@ export class DiagnosticsProvider {
             severity: DiagnosticSeverity.Information,
             range: {
               start: { line: lineNumber, character: startChar },
-              end: { line: lineNumber, character: endChar }
+              end: { line: lineNumber, character: endChar },
             },
             message: `Unknown ICD-10 code: "${code}". Please verify this is a valid medical diagnostic code.`,
             code: 'UNKNOWN_ICD10_CODE',
-            source: 'yAbelFish'
+            source: 'yAbelFish',
           });
         }
       }
     }
-    
+
     // Check for suspicious RxNorm codes
     const rxnormPattern = /\b\d{4,8}\b/g;
     while ((match = rxnormPattern.exec(line)) !== null) {
       const code = match[0];
       const startChar = match.index;
       const endChar = startChar + code.length;
-      
+
       // Basic validation for RxNorm codes (4-8 digits)
       if (code.length < 4 || code.length > 8) {
         diagnostics.push({
           severity: DiagnosticSeverity.Warning,
           range: {
             start: { line: lineNumber, character: startChar },
-            end: { line: lineNumber, character: endChar }
+            end: { line: lineNumber, character: endChar },
           },
           message: `Suspicious RxNorm code format: "${code}". RxNorm codes should be 4-8 digits.`,
           code: 'SUSPICIOUS_RXNORM_FORMAT',
-          source: 'yAbelFish'
+          source: 'yAbelFish',
         });
       }
     }
@@ -255,111 +293,147 @@ export class DiagnosticsProvider {
   /**
    * Validate patient data format
    */
-  private validatePatientData(text: string, document: TextDocument): Diagnostic[] {
+  private validatePatientData(
+    text: string,
+    _document: TextDocument
+  ): Diagnostic[] {
     const diagnostics: Diagnostic[] = [];
     const lines = text.split('\n');
-    
+
     lines.forEach((line, lineIndex) => {
       // Check for missing required patient fields
-      if (line.toLowerCase().includes('name:') && line.split(':')[1].trim() === '') {
+      if (
+        line.toLowerCase().includes('name:') &&
+        line.split(':')[1].trim() === ''
+      ) {
         diagnostics.push({
           severity: DiagnosticSeverity.Warning,
           range: {
             start: { line: lineIndex, character: 0 },
-            end: { line: lineIndex, character: line.length }
+            end: { line: lineIndex, character: line.length },
           },
           message: 'Patient name is required for proper medical documentation.',
           code: 'MISSING_PATIENT_NAME',
-          source: 'yAbelFish'
+          source: 'yAbelFish',
         });
       }
-      
+
       // Check for invalid date formats in patient data
-      if (line.toLowerCase().includes('dob:') || line.toLowerCase().includes('date of birth:')) {
-        const datePattern = /(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/g;
+      if (
+        line.toLowerCase().includes('dob:') ||
+        line.toLowerCase().includes('date of birth:')
+      ) {
+        const datePattern = /(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})/g;
         const match = datePattern.exec(line);
         if (match) {
           const dateStr = match[1];
           const startChar = match.index;
           const endChar = startChar + dateStr.length;
-          
+
           // Validate date format consistency
           if (!/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) {
             diagnostics.push({
               severity: DiagnosticSeverity.Information,
               range: {
                 start: { line: lineIndex, character: startChar },
-                end: { line: lineIndex, character: endChar }
+                end: { line: lineIndex, character: endChar },
               },
               message: `Date format "${dateStr}" should follow MM-DD-YYYY format for consistency.`,
               code: 'INCONSISTENT_DATE_FORMAT',
-              source: 'yAbelFish'
+              source: 'yAbelFish',
             });
           }
-          
+
           // Check for obviously invalid dates
-          if (dateStr.includes('00-00') || dateStr.includes('/00/') || dateStr.includes('-00-')) {
+          if (
+            dateStr.includes('00-00') ||
+            dateStr.includes('/00/') ||
+            dateStr.includes('-00-')
+          ) {
             diagnostics.push({
               severity: DiagnosticSeverity.Error,
               range: {
                 start: { line: lineIndex, character: startChar },
-                end: { line: lineIndex, character: endChar }
+                end: { line: lineIndex, character: endChar },
               },
               message: `Invalid date: "${dateStr}". Dates cannot contain zero months or days.`,
               code: 'INVALID_DATE',
-              source: 'yAbelFish'
+              source: 'yAbelFish',
             });
           }
         }
       }
     });
-    
+
     return diagnostics;
   }
 
   /**
    * Validate medication format
    */
-  private validateMedicationFormats(text: string, document: TextDocument): Diagnostic[] {
+  private validateMedicationFormats(
+    text: string,
+    _document: TextDocument
+  ): Diagnostic[] {
     const diagnostics: Diagnostic[] = [];
     const lines = text.split('\n');
-    
+
     lines.forEach((line, lineIndex) => {
       // Check for medication dosage format issues
-      if (line.trim().startsWith('-') && (line.toLowerCase().includes('mg') || line.toLowerCase().includes('units'))) {
+      if (
+        line.trim().startsWith('-') &&
+        (line.toLowerCase().includes('mg') ||
+          line.toLowerCase().includes('units'))
+      ) {
         // Look for incomplete medication information
         const dosageMatch = line.match(/(\d+\s*(?:mg|units|ml|g))/i);
-        if (dosageMatch && !line.match(/daily|twice|three times|as needed|prn|bid|tid|qid|q\d+h/i)) {
+        if (
+          dosageMatch &&
+          !line.match(
+            /daily|twice|three times|as needed|prn|bid|tid|qid|q\d+h/i
+          )
+        ) {
           diagnostics.push({
             severity: DiagnosticSeverity.Information,
             range: {
               start: { line: lineIndex, character: 0 },
-              end: { line: lineIndex, character: line.length }
+              end: { line: lineIndex, character: line.length },
             },
-            message: 'Medication entry may be missing frequency information (e.g., "daily", "twice daily", "as needed").',
+            message:
+              'Medication entry may be missing frequency information (e.g., "daily", "twice daily", "as needed").',
             code: 'INCOMPLETE_MEDICATION_INFO',
-            source: 'yAbelFish'
+            source: 'yAbelFish',
           });
         }
       }
     });
-    
+
     return diagnostics;
   }
 
   /**
    * Validate date formats throughout document
    */
-  private validateDateFormats(text: string, document: TextDocument): Diagnostic[] {
+  private validateDateFormats(
+    text: string,
+    _document: TextDocument
+  ): Diagnostic[] {
     const diagnostics: Diagnostic[] = [];
     const lines = text.split('\n');
-    
+
     const datePatterns = [
-      { regex: /\b\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4}\b/g, name: 'MM/DD/YYYY or MM-DD-YYYY' },
-      { regex: /\b\d{4}[-\/]\d{1,2}[-\/]\d{1,2}\b/g, name: 'YYYY-MM-DD' },
-      { regex: /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},?\s+\d{4}\b/gi, name: 'Month Day, Year' }
+      {
+        regex: /\b\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\b/g,
+        name: 'MM/DD/YYYY or MM-DD-YYYY',
+      },
+      { regex: /\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b/g, name: 'YYYY-MM-DD' },
+      {
+        regex:
+          /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},?\s+\d{4}\b/gi,
+        name: 'Month Day, Year',
+      },
     ];
-    
+
     lines.forEach((line, lineIndex) => {
       datePatterns.forEach(pattern => {
         let match;
@@ -367,24 +441,28 @@ export class DiagnosticsProvider {
           const dateStr = match[0];
           const startChar = match.index;
           const endChar = startChar + dateStr.length;
-          
+
           // Check for obviously invalid dates
-          if (dateStr.includes('00-00') || dateStr.includes('/00/') || dateStr.includes('-00-')) {
+          if (
+            dateStr.includes('00-00') ||
+            dateStr.includes('/00/') ||
+            dateStr.includes('-00-')
+          ) {
             diagnostics.push({
               severity: DiagnosticSeverity.Error,
               range: {
                 start: { line: lineIndex, character: startChar },
-                end: { line: lineIndex, character: endChar }
+                end: { line: lineIndex, character: endChar },
               },
               message: `Invalid date: "${dateStr}". Dates cannot contain zero months or days.`,
               code: 'INVALID_DATE',
-              source: 'yAbelFish'
+              source: 'yAbelFish',
             });
           }
         }
       });
     });
-    
+
     return diagnostics;
   }
 
@@ -511,7 +589,7 @@ export class DiagnosticsProvider {
           start: position,
           end: document.positionAt(match.index + code.length),
         };
-        
+
         // Enhanced validation with format checking
         if (pattern.type === 'ICD-10') {
           // Strict ICD-10 format validation
@@ -526,14 +604,15 @@ export class DiagnosticsProvider {
             continue;
           }
         }
-        
+
         const validation = this.terminology.validateCode(code);
         if (!validation.valid) {
           diagnostics.push({
             severity: DiagnosticSeverity.Information,
             range,
             message:
-              validation.message || `Unknown ${pattern.type} code: ${code}. Please verify this is a valid medical code.`,
+              validation.message ||
+              `Unknown ${pattern.type} code: ${code}. Please verify this is a valid medical code.`,
             code: 'UNKNOWN_CODE',
             source: 'yAbelFish',
           });
