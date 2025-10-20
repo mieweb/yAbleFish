@@ -1,6 +1,6 @@
 /**
  * LSP Client - Real Language Server Protocol Integration
- * 
+ *
  * This creates a simplified LSP client that communicates directly with
  * the yAbelFish LSP server using a more direct approach.
  */
@@ -28,16 +28,18 @@ export class YAbelLSPClient {
       );
 
       // Send port to worker
-      this.worker.postMessage({ 
-        type: 'init', 
-        port: this.messageChannel.port1 
-      }, [this.messageChannel.port1]);
+      this.worker.postMessage(
+        {
+          type: 'init',
+          port: this.messageChannel.port1,
+        },
+        [this.messageChannel.port1]
+      );
 
       // Set up message handling
       this.setupMessageHandling();
 
       console.log('✅ yAbelFish LSP Client started successfully');
-
     } catch (error) {
       console.error('❌ Failed to start LSP client:', error);
       throw error;
@@ -73,7 +75,7 @@ export class YAbelLSPClient {
         jsonrpc: '2.0',
         id,
         method,
-        params
+        params,
       };
 
       // Set up response handler
@@ -100,10 +102,10 @@ export class YAbelLSPClient {
   private setupMessageHandling(): void {
     if (!this.messageChannel) return;
 
-    this.messageChannel.port2.onmessage = (event) => {
+    this.messageChannel.port2.onmessage = event => {
       const message = event.data;
       console.log('📨 Received from LSP server:', message);
-      
+
       // Handle LSP notifications and responses
       if (message.method === 'textDocument/publishDiagnostics') {
         this.handleDiagnosticsNotification(message.params);
@@ -118,7 +120,7 @@ export class YAbelLSPClient {
    */
   private handleDiagnosticsNotification(params: any): void {
     const { uri, diagnostics } = params;
-    
+
     // Convert LSP diagnostics to Monaco markers
     const markers = diagnostics.map((diagnostic: any) => {
       let severity: monaco.MarkerSeverity;
@@ -138,7 +140,7 @@ export class YAbelLSPClient {
         default:
           severity = monaco.MarkerSeverity.Info;
       }
-      
+
       return {
         severity,
         startLineNumber: diagnostic.range.start.line + 1, // LSP is 0-based, Monaco is 1-based
@@ -147,15 +149,15 @@ export class YAbelLSPClient {
         endColumn: diagnostic.range.end.character + 1,
         message: diagnostic.message,
         code: diagnostic.code || 'LSP_DIAGNOSTIC',
-        source: diagnostic.source || 'yAbelFish LSP'
+        source: diagnostic.source || 'yAbelFish LSP',
       };
     });
-    
+
     // Find the Monaco model for this URI and set markers
     const model = monaco.editor.getModels().find(m => m.uri.toString() === uri);
     if (model) {
       monaco.editor.setModelMarkers(model, 'yabelfish-lsp', markers);
-      
+
       // Emit custom event for UI updates
       this.emitDiagnosticsEvent(uri, diagnostics);
     }
@@ -166,7 +168,7 @@ export class YAbelLSPClient {
    */
   private emitDiagnosticsEvent(uri: string, diagnostics: any[]): void {
     const event = new CustomEvent('yabelfish-diagnostics', {
-      detail: { uri, diagnostics }
+      detail: { uri, diagnostics },
     });
     window.dispatchEvent(event);
   }
@@ -183,7 +185,7 @@ export class YAbelLSPClient {
     const message = {
       jsonrpc: '2.0',
       method,
-      params
+      params,
     };
 
     this.messageChannel.port2.postMessage(message);
@@ -198,7 +200,7 @@ export class YAbelLSPClient {
       id: 'yabel',
       extensions: ['.yabel', '.yaml'],
       aliases: ['yAbel', 'yabel'],
-      mimetypes: ['text/x-yabel', 'application/x-yabel']
+      mimetypes: ['text/x-yabel', 'application/x-yabel'],
     });
 
     // Basic tokenization (can be enhanced later)
@@ -209,9 +211,9 @@ export class YAbelLSPClient {
           [/^[A-Za-z][^:]*:/, 'field-name'],
           [/\b[A-Z]\d{2}(\.\d+)?\b/, 'icd-code'],
           [/\b\d{4,}\b/, 'rxnorm-code'],
-          [/#.*$/, 'comment']
-        ]
-      }
+          [/#.*$/, 'comment'],
+        ],
+      },
     });
 
     // Define theme
@@ -223,9 +225,9 @@ export class YAbelLSPClient {
         { token: 'field-name', foreground: '008000', fontStyle: 'bold' },
         { token: 'icd-code', foreground: '800080' },
         { token: 'rxnorm-code', foreground: 'ff6600' },
-        { token: 'comment', foreground: '808080', fontStyle: 'italic' }
+        { token: 'comment', foreground: '808080', fontStyle: 'italic' },
       ],
-      colors: {}
+      colors: {},
     });
   }
 }
