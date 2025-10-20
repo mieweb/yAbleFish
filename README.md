@@ -1,10 +1,265 @@
 # yabelFish
 
+## Obsolescence - Preamble
+
 DNS: yabelfish.com like [Babel fish](docs/babelfish.md)
 
-A Language Server Protocol (LSP) server designed for medical documentation using the yabel format. yabel is a lightweight, human-readable text format that combines the best of **Markdown** and **YAML** - but without being strict about either. This flexible approach allows clinicians to write natural, flowing medical notes while still maintaining enough structure for software to parse and analyze.
+We ultimately hope this tool becomes [obsolete](https://www.youtube.com/shorts/EjMEPLe1NC8)—superseded by ambient clinical intelligence where structured codes settle as a thin archaeological layer in the history of health tech. Until that future arrives, yabelFish exists to make producing accurate, semi‑structured medical notes faster, safer, and less frustrating.
 
-## 📝 What is yabel?
+As [AR-assisted](https://youtu.be/EprwyLnDUFw) workflows (e.g. [Ozwell](https://ozwell.ai)-style AR glasses) and vector‑DB powered [WebChart](https://www.webchartnow.com) mature, real‑time semantic capture may remove the need for standalone LSP editors entirely. When that day comes, today’s manual coding friction—and the [moral injury](https://youtu.be/L_1PNZdHq6Q) caused by [poor UX](https://youtu.be/xB_tSFJsjsw?si=AjO-gL1l-bU-LmKh)—will just be another stratum of sediment. In the meantime, we focus on pragmatic tooling that helps clinicians now while paving a path toward that ambient, unobtrusive future.
+
+
+---
+
+## 🩺 What is yabel?
+
+**yabel** is a lightweight, human-readable text format inspired by **Markdown** and **YAML**, designed specifically for clinical documentation. It allows clinicians to write naturally — as they would speak — while maintaining enough structure for software to interpret, analyze, and interoperate with standards like FHIR.
+
+**yabelFish-LSP** is the companion **Language Server Protocol (LSP)** implementation that powers real-time feedback, inlay hints, and structure-aware editing inside editors such as the Monaco-based yabelFish web client.
+It ensures that documentation remains human-sounding while surfacing machine-interpretable structure *where it truly matters*.
+
+---
+
+## 🎯 Design Goals
+
+1. **Narrative First**
+   Preserve the clinician’s natural phrasing. The system never rewrites narrative text automatically. Normalization is *suggested*, not imposed.
+
+2. **Strict Where It Counts**
+   Enforce structure only for clinically critical content:
+
+   * **Assessment & Plan (A/P)**
+   * **Diagnoses and Codes** (ICD-10, SNOMED, etc.)
+   * **Orders** (medications, labs, imaging, restrictions, etc.)
+
+3. **Transparent Assumptions**
+   Use **inlay hints** to show inferred structure (e.g., “assumed BP 120/80 → systolic 120, diastolic 80”).
+   Hints are unobtrusive, human-readable, and always optional. A click can convert an assumption into structured yabel.
+
+4. **Policy-Driven Normalization**
+   Normalization strength is governed by **profiles**, which *non-developers* can tune via configuration or UI:
+
+   * **Narrative Mode** — Light touch, guidance only.
+   * **Compliance (eCQM) Mode** — Enables measure-driven strictness, requiring structure for quality reporting.
+
+   These profiles allow clinical leaders, informatics staff, or compliance officers to adjust validation without code changes.
+
+---
+
+## ⚙️ Modular Architecture
+
+The yabelFish-LSP is **modular**, enabling developers (and later domain experts) to extend it easily.
+
+Each **module** is a self-contained bundle consisting of:
+
+* A **parser** (Tree-sitter grammar)
+* LSP feature implementations for
+  `Diagnostics`, `Completion`, `Hover`, `Code Actions`, `Inlay Hints`, and `Formatting`
+* A **mapping to the Abstract Syntax Tree (AST)**
+* A **visualizer** for the AST and parsed document structure
+
+Out of the box, yabelFish includes:
+
+| Module          | Purpose                                                                                                         |
+| --------------- | --------------------------------------------------------------------------------------------------------------- |
+| `yVisit`        | Clinical encounter summary                                                                                      |
+| `yMedication`   | Medications and prescriptions                                                                                   |
+| `yAllergy`      | Allergy and intolerance documentation                                                                           |
+| `yProblem`      | Problem list entries                                                                                            |
+| `yImmunization` | Immunization records                                                                                            |
+| `yOrder`        | Orders (labs, imaging, therapy, restrictions)                                                                   |
+| `yCard`         | Base structure for demographic and administrative entities (e.g., `yPatient`, `yPractitioner`, `yOrganization`) |
+
+Additional modules can be authored to support specialty domains or institutional needs.
+
+---
+
+## 🧠 AST and Change Awareness
+
+Each module generates an **AST** (Abstract Syntax Tree) — typically aligned with **FHIR resources**, but open to alternative data models.
+The AST layer supports **smart differencing** and **instance tracking**, enabling context-aware behaviors such as:
+
+* Recognizing when a medication instance (by ID) has been **edited vs replaced**
+* Flagging **therapy changes** vs **error corrections**
+* Showing inlay hints when **current use** diverges from the **prescribed order**
+  (e.g., “Patient taking differently than prescribed — sig updated since order date”)
+
+This allows the LSP to distinguish between:
+
+* ✅ a *documentation correction*
+* 🔁 a *change in therapy or status*
+  and reflect that distinction clearly to both the clinician and downstream systems.
+
+---
+
+## 🧩 Example Interaction
+
+Clinician writes naturally in **yabel**:
+
+```
+## Presenting medications
+- lisinopril 10 mg po daily
+
+## Plan
+- DC lisinopril.
+- Start losartan 25 mg po daily.
+```
+
+### 🧠 What yabelFish-LSP Understands
+
+yabelFish-LSP parses this using the `yMedication` and `yOrder` modules and recognizes that:
+
+* **Lisinopril** already exists as an *active medication* in the “presenting” context.
+* The **Plan** explicitly includes a *discontinue* order for the same medication.
+* A *new* medication order — **Losartan 25 mg po daily** — follows immediately after.
+
+From this, the LSP infers:
+
+1. A **therapy change** (ACE inhibitor → ARB).
+2. A **medication instance transition** — not an error correction, but a deliberate substitution.
+3. The **timeline** of therapy has shifted: lisinopril was taken *before this visit*; losartan will be *started from this point forward.*
+
+---
+
+### 💡 Inlay Hints (Shown Inline, Non-Intrusive)
+
+```
+## Presenting medications
+- lisinopril 10 mg po daily
+  (active medication instance: #med-1023)
+
+## Plan
+- DC lisinopril.
+  (recognized change: discontinue #med-1023)
+- Start losartan 25 mg po daily.
+  (new medication instance: #med-2031)
+  (inferred therapy substitution: ACE→ARB)
+```
+
+These hints are subtle, low-contrast annotations that appear only if the clinician enables **structure view**.
+They show what the LSP *understood*, not what it *rewrote*.
+
+Each hint supports simple actions:
+
+* **“Accept as structured yMedication change”**
+* **“Dismiss hint”**
+* **“Show diff”** (displays structured representation of change)
+
+---
+
+### ⚙️ Structured AST Representation
+
+The parsed AST (FHIR-aligned) might look like:
+
+```json
+{
+  "medications": [
+    {
+      "id": "med-1023",
+      "name": "lisinopril",
+      "dose": "10 mg",
+      "route": "po",
+      "frequency": "daily",
+      "status": "discontinued",
+      "changedAt": "2025-10-19",
+      "changeType": "therapy_substitution"
+    },
+    {
+      "id": "med-2031",
+      "name": "losartan",
+      "dose": "25 mg",
+      "route": "po",
+      "frequency": "daily",
+      "status": "active",
+      "relatedTo": "med-1023",
+      "changeType": "replacement"
+    }
+  ]
+}
+```
+
+The **AST diff engine** recognizes that:
+
+* `med-1023` (lisinopril) transitioned from *active → discontinued*
+* `med-2031` (losartan) was added as a new instance linked by substitution context
+
+This difference would be shown visually in the AST viewer, with clear lineage from old → new.
+
+---
+
+### 🩺 Clinical Semantics and Clarity
+
+By treating “DC lisinopril / Start losartan” as linked events, yabelFish-LSP can:
+
+* **Preserve narrative voice** (“DC lisinopril” stays exactly as written)
+* **Expose structure and meaning** for downstream systems (e.g., FHIR `MedicationStatement` + `MedicationRequest`)
+* **Surface safe inferences** through inlay hints and diffs
+* **Enable quality tracking** for therapy changes and medication reconciliation
+
+---
+
+### 🧩 Developer Takeaway
+
+This example demonstrates how the LSP’s modular pipeline works:
+
+| Stage           | Module                  | Role                                                                 |
+| --------------- | ----------------------- | -------------------------------------------------------------------- |
+| **Parsing**     | `yMedication`, `yOrder` | Recognizes medication entities and plan actions                      |
+| **AST Mapping** | FHIR-aligned nodes      | Tracks instances and relationships                                   |
+| **Diff Engine** | Built into core         | Detects “discontinue + start” as a therapy change                    |
+| **Inlay Hints** | `inlayHintProvider`     | Shows what the system inferred                                       |
+| **Diagnostics** | `publishDiagnostics`    | Alerts only if structure is incomplete (e.g., missing dose or route) |
+
+
+---
+
+## 🧰 Configuration for Non-Developers
+
+Profiles and module behavior can be tuned declaratively:
+
+```yaml
+yabelFish:
+  profile: narrative   # or eCQM
+  enabledModules:
+    - yVisit
+    - yMedication
+    - yProblem
+  strict:
+    assessmentPlan: true
+    codes: true
+    orders: true
+  normalization:
+    narrativeRewrite: false
+    safeAutofixOnSave: ["assessmentPlan", "orders"]
+```
+
+This allows clinical administrators or QA teams to adjust the balance between **freedom** and **structure** without modifying code.
+
+---
+
+## 🧱 Developer Summary
+
+| Feature           | Description                                                           |
+| ----------------- | --------------------------------------------------------------------- |
+| **Parser Layer**  | Modular Tree-sitter grammars per module                               |
+| **LSP Layer**     | Diagnostics, Completion, Hover, Code Actions, Inlay Hints, Formatting |
+| **AST Model**     | Usually FHIR-based; tracks instance IDs and differences               |
+| **Profiles**      | Narrative / eCQM strictness, adjustable by non-devs                   |
+| **Visualization** | Real-time AST and diff viewer                                         |
+| **Extensibility** | Drop-in modules for new documentation domains                         |
+
+---
+
+## ✅ Philosophy in Practice
+
+yabelFish-LSP is **human-first** and **modular by design**:
+
+* It respects clinical storytelling.
+* It augments clarity where it matters.
+* It evolves through tunable modules and policies, not hard-coded rules.
+
+---
+
 
 yabel is designed to be:
 - **Markdown-inspired** for natural text flow and readability
@@ -30,12 +285,6 @@ yabelFish is a web-based editor that leverages the Monaco Editor (the core of VS
 ## Examples
 
 [EXAMPLE.md](EXAMPLE.md)
-
-### Obsolescence
-
-We ultimately hope this tool becomes [obsolete](https://www.youtube.com/shorts/EjMEPLe1NC8)—superseded by ambient clinical intelligence where structured codes settle as a thin archaeological layer in the history of health tech. Until that future arrives, yabelFish exists to make producing accurate, semi‑structured medical notes faster, safer, and less frustrating.
-
-As [AR-assisted](https://youtu.be/EprwyLnDUFw) workflows (e.g. [Ozwell](https://ozwell.ai)-style AR glasses) and vector‑DB powered [WebChart](https://www.webchartnow.com) mature, real‑time semantic capture may remove the need for standalone LSP editors entirely. When that day comes, today’s manual coding friction—and the [moral injury](https://youtu.be/L_1PNZdHq6Q) caused by [poor UX](https://youtu.be/xB_tSFJsjsw?si=AjO-gL1l-bU-LmKh)—will just be another stratum of sediment. In the meantime, we focus on pragmatic tooling that helps clinicians now while paving a path toward that ambient, unobtrusive future.
 
 
 ## 🚀 Features
